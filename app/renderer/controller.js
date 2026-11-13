@@ -1277,16 +1277,20 @@ ipc.on("set-autocomplete-disabled", (event, autoCompleteDisabled) => {
 
 
 function updateTheme(event, newTheme) {
-    let themes = ["dark", "contrast", "focus"];
-    themes = themes.filter(e => e !== newTheme);
-    if (newTheme && newTheme.toLowerCase() !== 'main')
-    {
-        $(".window").addClass(newTheme);
-    }
-    for (const theme of themes) {
-        $(".window").removeClass(theme);
-    }
-	LiveCompiler.setEdited();
+    // Only the IDE theme changes: the reader remains controlled by game.yaml.
+    const theme = ["dark", "contrast", "focus"].includes(String(newTheme || "").toLowerCase())
+        ? String(newTheme).toLowerCase() : "light";
+    $(".window").removeClass("dark contrast focus");
+    if( theme !== "light" ) $(".window").addClass(theme);
+
+    // Ace themes are included in acesrc. The Dark menu entry selects Graphite
+    // chrome plus Ace's restrained tomorrow_night editor theme.
+    EditorView.setEditorTheme(theme === "dark" ? "ace/theme/tomorrow_night" : "ace/theme/textmate");
+
+    // Ace autocomplete and jsTree context menus live outside .window. Also
+    // enables the already-existing html.dark styling on the Visual/Advanced tabs.
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    LiveCompiler.setEdited();
 }
 
 updateTheme(null, window.localStorage.getItem("theme"));
