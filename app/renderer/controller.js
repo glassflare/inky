@@ -998,6 +998,7 @@ if( styleFormFrame ) {
         if( loadedPath !== frame.dataset.formPath || loadedVirtual !== (frame.dataset.virtualMode || "0") ||
             loadedSession !== frame.dataset.styleModeKey ) return;
         frame.dataset.formReadyFor = frame.dataset.yamlPath || "";
+        syncStyleFormIdeTheme();
         try {
             frame.contentWindow.scrollTo(0, 0);
             const formDocument = frame.contentDocument;
@@ -1276,6 +1277,15 @@ ipc.on("set-autocomplete-disabled", (event, autoCompleteDisabled) => {
 
 
 
+// The settings document is editor UI, not the story's game.yaml palette.
+// Apply its IDE-only class both on load and when the menu theme changes.
+function syncStyleFormIdeTheme() {
+    const frame = document.getElementById("game-settings-inline");
+    const formDocument = frame && frame.contentDocument;
+    if( formDocument ) formDocument.documentElement.classList.toggle(
+        "inky-graphite", document.documentElement.classList.contains("dark"));
+}
+
 function updateTheme(event, newTheme) {
     // Only the IDE theme changes: the reader remains controlled by game.yaml.
     const theme = ["dark", "contrast", "focus"].includes(String(newTheme || "").toLowerCase())
@@ -1290,7 +1300,7 @@ function updateTheme(event, newTheme) {
     // Ace autocomplete and jsTree context menus live outside .window. Also
     // enables the already-existing html.dark styling on the Visual/Advanced tabs.
     document.documentElement.classList.toggle("dark", theme === "dark");
-    LiveCompiler.setEdited();
+    syncStyleFormIdeTheme();
 }
 
 updateTheme(null, window.localStorage.getItem("theme"));

@@ -135,6 +135,12 @@ html.dark .ace_autocomplete {
     border: 1px solid #506074;
 }
 html.dark .ace_autocomplete .ace_marker-layer .ace_active-line { background: #344c66; }
+html.dark .ace_autocomplete .ace_completion-highlight { color: #87b9ee; }
+html.dark .ace_autocomplete .ace_rightAlignedText { color: #a9b5c4; }
+html.dark .ace_autocomplete .ace_line-hover {
+    background: #303c4c;
+    border-color: #506074;
+}
 html.dark .ace_tooltip {
     background: #252c35;
     color: #e4eaf1;
@@ -169,12 +175,57 @@ html.dark .vakata-context.jstree-default-contextmenu .vakata-context-separator >
     border-right-color: var(--inky-dark-border);
     color: var(--inky-dark-muted);
 }
-.window.dark ::-webkit-scrollbar {
+.window.dark #editor ::-webkit-scrollbar,
+.window.dark .sidebar ::-webkit-scrollbar,
+.window.dark #toolbar .issue-popup ::-webkit-scrollbar,
+html.dark .ace_autocomplete ::-webkit-scrollbar {
     width: .75rem;
     background: var(--inky-dark-sidebar);
     border-left: 1px solid var(--inky-dark-border);
 }
-.window.dark ::-webkit-scrollbar-thumb {
+.window.dark #editor ::-webkit-scrollbar-thumb,
+.window.dark .sidebar ::-webkit-scrollbar-thumb,
+.window.dark #toolbar .issue-popup ::-webkit-scrollbar-thumb,
+html.dark .ace_autocomplete ::-webkit-scrollbar-thumb {
     background: #465466;
     border-radius: 8px;
 }
+
+
+/* Native Ace Find/Replace controls are injected after the theme styles. */
+.window.dark #editor .ace_search {
+    background: var(--inky-dark-toolbar);
+    color: var(--inky-dark-text);
+    border-color: var(--inky-dark-border);
+}
+.window.dark #editor .ace_search_form,
+.window.dark #editor .ace_replace_form { border-color: #506074; }
+.window.dark #editor .ace_search_field,
+.window.dark #editor .ace_searchbtn,
+.window.dark #editor .ace_replacebtn {
+    background-color: var(--inky-dark-editor);
+    color: var(--inky-dark-text);
+    border-color: var(--inky-dark-border);
+}
+.window.dark #editor .ace_search_field::placeholder { color: var(--inky-dark-muted); }
+.window.dark #editor .ace_searchbtn:hover,
+.window.dark #editor .ace_replacebtn:hover,
+.window.dark #editor .ace_button:hover { background-color: var(--inky-dark-hover); }
+.window.dark #editor .ace_button {
+    color: var(--inky-dark-text);
+    border-color: #506074;
+    opacity: 1;
+}
+.window.dark #editor .ace_button.checked { border-color: var(--inky-dark-accent); }
+
+/* Visual/Advanced are IDE tabs, independent of the story theme picker. */
+.window.dark #style-mode-bar {
+    background: var(--inky-dark-toolbar);
+    border-color: var(--inky-dark-border);
+}
+.window.dark .style-mode-tab { color: var(--inky-dark-muted); border-color: var(--inky-dark-border); }
+.window.dark .style-mode-tab:hover:not(:disabled) { background: var(--inky-dark-hover); color: var(--inky-dark-text); }
+.window.dark .style-mode-tab.active { background: var(--inky-dark-editor); color: var(--inky-dark-text); }
+.window.dark .style-mode-tab.active::before { background: var(--inky-dark-accent); }
+.window.dark .style-mode-tab:focus-visible { outline-color: var(--inky-dark-accent); }
+.window.dark #toolbar .issue-popup .error .issue { color: #f29b9b; }

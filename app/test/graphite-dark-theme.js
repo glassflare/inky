@@ -34,4 +34,35 @@ describe("Graphite replacement for the Dark IDE theme", function() {
         assert.match(css, /html\.dark \.vakata-context\.jstree-default-contextmenu/);
         assert.match(css, /html\.dark \.ace_autocomplete/);
     });
+    it("switches IDE and settings surfaces without recompiling or touching the story", function() {
+        const vm = require("node:vm");
+        const { JSDOM } = require("jsdom");
+        const dom = new JSDOM('<html><body><div class="window"></div><iframe id="game-settings-inline"></iframe></body></html>', {runScripts: "outside-only"});
+        try {
+            dom.window.eval(load("jquery-2.2.3.min.js"));
+            const controller = load("controller.js");
+            const start = controller.indexOf("function syncStyleFormIdeTheme()");
+            const end = controller.indexOf("updateTheme(null,", start);
+            const themes = [];
+            const context = {document: dom.window.document, $: dom.window.jQuery,
+                EditorView: {setEditorTheme: name => themes.push(name)},
+                LiveCompiler: {setEdited: () => { throw Error("An IDE theme must not recompile the story"); }}};
+            vm.createContext(context);
+            vm.runInContext(controller.slice(start, end), context);
+            for (const theme of ["dark", "light", "contrast", "focus", "dark"]) {
+                context.updateTheme(null, theme);
+                const dark = theme === "dark";
+                assert.strictEqual(dom.window.document.documentElement.classList.contains("dark"), dark);
+                assert.strictEqual(dom.window.document.querySelector(".window").classList.contains(theme), theme !== "light");
+                assert.strictEqual(dom.window.document.querySelector("iframe").contentDocument.documentElement.classList.contains("inky-graphite"), dark);
+                assert.strictEqual(themes.at(-1), dark ? "ace/theme/tomorrow_night" : "ace/theme/textmate");
+            }
+        } finally { dom.window.close(); }
+    });
+
+    it("keeps Graphite scrollbar rules off the story pane", function() {
+        for (const theme of ["dark", "contrast", "focus"])
+            assert.doesNotMatch(load(theme + ".css"), new RegExp("\\.window\\." + theme + "\\s+::-webkit-scrollbar"));
+    });
+
 });
