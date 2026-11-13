@@ -90,4 +90,26 @@ describe("Contrast / High Clarity", function() {
         assert.match(css, /html\.contrast \.vakata-context/);
         assert.match(renderer("gameSettings/gameSettings.css"), /:root\.inky-high-clarity/);
     });
+    it("themes Explorer dialogs appended directly to body without leaking into other themes", function() {
+        const dom = new JSDOM('<html class="contrast"><body><div class="window contrast"></div><div class="explorer-dialog">Message</div></body></html>');
+        try {
+            const document = dom.window.document;
+            const style = document.createElement("style");
+            style.textContent = renderer("contrast.css");
+            document.head.appendChild(style);
+            const dialog = document.querySelector(".explorer-dialog");
+            assert.strictEqual(dialog.closest(".window"), null);
+            const backgrounds = () => [...style.sheet.cssRules].filter(rule =>
+                rule.selectorText && dialog.matches(rule.selectorText) && rule.style.getPropertyValue("background"));
+            assert(backgrounds().length > 0, "the dialog must match a Contrast surface rule");
+            assert(dom.window.getComputedStyle(document.documentElement).getPropertyValue("--hc-panel").trim(),
+                "body-level overlays must inherit the private IDE palette");
+            for(const theme of ["light", "dark", "focus"]) {
+                document.documentElement.className = theme;
+                document.querySelector(".window").className = "window " + theme;
+                assert.strictEqual(backgrounds().length, 0);
+            }
+        } finally { dom.window.close(); }
+    });
+
 });

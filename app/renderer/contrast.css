@@ -4,6 +4,7 @@
  * Blue identifies actions; amber identifies the current writing/navigation point.
  * These surfaces belong to the IDE. Story colors stay in game.yaml.
  */
+html.contrast,
 .window.contrast {
     --hc-paper: #0e1117;
     --hc-panel: #202733;
@@ -16,8 +17,8 @@
     --hc-pink: #ffabba;
     --hc-edge: #7d91aa;
     --hc-selection: #203a51;
-    --sidebar-text: var(--hc-text);
 }
+.window.contrast { --sidebar-text: var(--hc-text); }
 .window.contrast #main { background: var(--hc-explorer); }
 .window.contrast #editor-pane,
 .window.contrast #editor { background: var(--hc-paper); color: var(--hc-text); }
@@ -121,12 +122,14 @@
 .window.contrast #editor .ace_gather.ace_label,
 .window.contrast #editor .ace_glue,
 .window.contrast #editor .ace_include,
-.window.contrast #editor .ace_external { color: var(--hc-blue); }
+.window.contrast #editor .ace_external,
+.window.contrast #editor .ace_entity.ace_name.ace_tag { color: var(--hc-blue); }
 .window.contrast #editor .ace_choice.ace_bullets,
 .window.contrast #editor .ace_choice.ace_weaveBracket,
 .window.contrast #editor .ace_gather.ace_bullets { color: var(--hc-pink); }
 .window.contrast #editor .ace_var-decl,
 .window.contrast #editor .ace_list-decl,
+.window.contrast #editor .ace_variable,
 .window.contrast #editor .ace_logic:not(.ace_innerContent),
 .window.contrast #editor .ace_string { color: var(--hc-green); }
 .window.contrast #editor .ace_tag,
@@ -184,16 +187,16 @@ html.contrast .vakata-context.jstree-default-contextmenu .vakata-contextmenu-sho
     color: #b8c4d3; opacity: 1;
 }
 .window.contrast #goto-anything,
-.window.contrast .explorer-dialog { background: var(--hc-panel); color: var(--hc-text); border-color: var(--hc-edge); }
+html.contrast .explorer-dialog { background: var(--hc-panel); color: var(--hc-text); border-color: var(--hc-edge); }
 .window.contrast #goto-anything input { background: var(--hc-paper); color: var(--hc-text); border-color: var(--hc-edge); }
 .window.contrast #goto-anything .meta,
 .window.contrast #goto-anything .ancestor,
-.window.contrast .explorer-dialog-note { color: var(--hc-secondary); }
+html.contrast .explorer-dialog-note { color: var(--hc-secondary); }
 .window.contrast #goto-anything .selected { background: var(--hc-selection); border-color: var(--hc-amber); }
-.window.contrast .explorer-dialog-button { background: var(--hc-paper); color: var(--hc-text); border-color: var(--hc-edge); }
-.window.contrast .explorer-dialog-button:hover { background: var(--hc-selection); }
-.window.contrast .explorer-dialog-button.primary { background: var(--hc-blue); color: var(--hc-paper); border-color: var(--hc-blue); }
-.window.contrast .explorer-dialog-button.danger { background: var(--hc-pink); color: var(--hc-paper); border-color: var(--hc-pink); }
+html.contrast .explorer-dialog-button { background: var(--hc-paper); color: var(--hc-text); border-color: var(--hc-edge); }
+html.contrast .explorer-dialog-button:hover { background: var(--hc-selection); }
+html.contrast .explorer-dialog-button.primary { background: var(--hc-blue); color: var(--hc-paper); border-color: var(--hc-blue); }
+html.contrast .explorer-dialog-button.danger { background: var(--hc-pink); color: var(--hc-paper); border-color: var(--hc-pink); }
 
 /* Clear tab and keyboard-focus markers; no new sizes or spacing. */
 .window.contrast #style-mode-bar { background: var(--hc-panel); border-color: var(--hc-edge); }
@@ -202,7 +205,7 @@ html.contrast .vakata-context.jstree-default-contextmenu .vakata-contextmenu-sho
 .window.contrast .style-mode-tab.active { background: var(--hc-paper); color: var(--hc-text); box-shadow: none; }
 .window.contrast .style-mode-tab.active::before { background: var(--hc-amber); }
 .window.contrast .style-mode-tab:focus-visible,
-.window.contrast .explorer-dialog-button:focus-visible { outline-color: var(--hc-blue); }
+html.contrast .explorer-dialog-button:focus-visible { outline-color: var(--hc-blue); }
 
 /* Scope native scrollbars to IDE surfaces, leaving the reader's styles alone. */
 .window.contrast #editor ::-webkit-scrollbar,
