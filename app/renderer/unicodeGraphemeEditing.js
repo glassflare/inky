@@ -95,6 +95,7 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
         if (selection.$inkyGraphemeEditing) return;
         selection.$inkyGraphemeEditing = true;
         let wordDirection = null;
+        let mouseStart = null;
 
         // All mouse paths (click, shift-click, drag, double-click), vertical
         // navigation and Ace's Ctrl+word commands eventually move the lead.
@@ -113,6 +114,17 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
             return move.call(this, row, col, keepDesiredColumn);
         };
 
+        // Ace calls moveToPosition(rawPixelPosition), then immediately calls
+        // selectToPosition(the SAME rawPixelPosition), even for a plain click.
+        // Preserve the snapped point instead of selecting an emoji on mousedown.
+        if (typeof selection.moveToPosition === "function") {
+            const moveToPosition = selection.moveToPosition;
+            selection.moveToPosition = function(pos, ...args) {
+                mouseStart = enabled() ? { row: pos.row, column: pos.column } : null;
+                return moveToPosition.call(this, pos, ...args);
+            };
+        }
+
         // At the first pixel of a drag, Ace's getRange().isEmpty() is still
         // true even though selectTo has established an anchor. Preserve the
         // intended direction explicitly while Ace executes the selection.
@@ -125,8 +137,11 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
                     ? args[0] : {row: args[0], column: args[1]};
                 const anchor = this.getSelectionAnchor();
                 const cmp = pointCmp(target, anchor);
+                const sameInitialClick = method === "selectToPosition" && mouseStart &&
+                    pointCmp(mouseStart, target) === 0 && this.isEmpty();
+                mouseStart = null;
                 const prev = wordDirection;
-                wordDirection = cmp > 0 ? "right" : cmp < 0 ? "left" : null;
+                wordDirection = sameInitialClick ? null : cmp > 0 ? "right" : cmp < 0 ? "left" : null;
                 try { return original.apply(this, args); }
                 finally { wordDirection = prev; }
             };
