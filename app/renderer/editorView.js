@@ -1,7 +1,7 @@
 const editor = ace.edit("editor");
 const Range = ace.require("ace/range").Range;
 const TokenIterator = ace.require("ace/token_iterator").TokenIterator;
-const language_tools = ace.require("ace/ext/language_tools");
+const language_tools = ace.require("ace/ext/language_tools") || {};
 const TagFormat = require("./tagFormat.js").TagFormat;
 
 const inkCompleter = require("./inkCompleter.js").inkCompleter;
