@@ -10,7 +10,7 @@ function withThemes(check, withFrame = true) {
     const dom = new JSDOM('<html><body><div class="window"></div><div id="player" style="--game-bg: #112233; color: #abcdef"><p>Story</p></div>' +
         (withFrame ? '<iframe id="game-settings-inline"></iframe>' : '') + '</body></html>', {runScripts: "outside-only"});
     try {
-        dom.window.eval(renderer("jquery-2.2.3.min.js"));
+        dom.window.eval(fs.readFileSync(require.resolve("jquery"), "utf8"));
         const source = renderer("controller.js"), themes = [];
         const context = {document: dom.window.document, $: dom.window.jQuery,
             EditorView: {setEditorTheme: name => themes.push(name)},
