@@ -96,6 +96,7 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
         selection.$inkyGraphemeEditing = true;
         let wordDirection = null;
         let mouseStart = null;
+        let selectionDepth = 0;
 
         // All mouse paths (click, shift-click, drag, double-click), vertical
         // navigation and Ace's Ctrl+word commands eventually move the lead.
@@ -132,7 +133,7 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
             if (typeof selection[method] !== "function") continue;
             const original = selection[method];
             selection[method] = function(...args) {
-                if (!enabled()) return original.apply(this, args);
+                if (!enabled() || selectionDepth) return original.apply(this, args);
                 const target = method === "selectToPosition"
                     ? args[0] : {row: args[0], column: args[1]};
                 const anchor = this.getSelectionAnchor();
@@ -142,8 +143,9 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
                 mouseStart = null;
                 const prev = wordDirection;
                 wordDirection = sameInitialClick ? null : cmp > 0 ? "right" : cmp < 0 ? "left" : null;
+                selectionDepth++;
                 try { return original.apply(this, args); }
-                finally { wordDirection = prev; }
+                finally { selectionDepth--; wordDirection = prev; }
             };
         }
 
