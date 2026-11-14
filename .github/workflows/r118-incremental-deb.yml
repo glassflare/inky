@@ -175,23 +175,15 @@ jobs:
                 await app.renderer.send("Input.dispatchMouseEvent",{type:"mousePressed",x:target.x,y:target.y,button:"left",clickCount:1,modifiers:1});
                 await app.renderer.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:target.x,y:target.y,button:"left",clickCount:1,modifiers:1});
                 await app.until("ace.edit('editor').getCursorPosition().row === 3");
-                const result=await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3),hasParser:!!require('./unicodeGraphemeEditing.js')})().toString()"); // overwritten below
+                const result=await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3)})");
+                assert.equal(result.row,3);
+                assert.match(result.source,/The first paragraph/);
                 console.log("PASS packaged Debian 0.15.2-118 native Preview and source-map Alt-click:",theme);
               } finally {if(app)await app.close();}
             }
             console.log("Native packaged-Electron smoke test passed across all four themes. Logs at:",base);
           })().then(()=>process.exit(0),e=>{console.error("Native r118 smoke failure:",e.stack||e);process.exit(1);});
           NODE
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path(__import__("os").environ["RUNNER_TEMP"]+"/r118/native-smoke.cjs")
-          t=p.read_text()
-          t=t.replace("""                const result=await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3),hasParser:!!require('./unicodeGraphemeEditing.js')})().toString()"); // overwritten below""","""                const result=await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3)})");
-                assert.equal(result.row,3);
-                assert.match(result.source,/The first paragraph/);""")
-          p.write_text(t)
-          PY
-
       - name: Run packaged Debian Electron GUI regression under Xvfb
         run: |
           set -euo pipefail
