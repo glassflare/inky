@@ -43,7 +43,7 @@ require("./fileReference.js").FileReference.install(editor, inkCompleter);
 require("./yamlTitleGuard.js").YamlTitleGuard.install(editor);
 const richText = require("./richTextFormatting.js").RichTextFormatting.install(editor, Range);
 // Keep emoji grapheme clusters intact when the older Ace editor moves/deletes text.
-require("./unicodeGraphemeEditing.js").installGraphemeEditing(editor, Range, () => currentInkFile && currentInkFile.isInkFile);
+require("./unicodeGraphemeEditing.js").installGraphemeEditing(editor, Range, () => !!currentInkFile);
 require("./richTextToolbar.js").RichTextToolbar.install(editor, richText);
 
 // Unbind windows CTRL-P: "Jump to matching bracket" since it collides with
