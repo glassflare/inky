@@ -158,13 +158,18 @@
 
   </body>
 
-  <script src="acesrc/ace.js" type="text/javascript" charset="utf-8"></script>
-  <script src="acesrc/mode-yaml.js" type="text/javascript" charset="utf-8"></script>
-  <script src="acesrc/ext-language_tools.js"></script>
-
-  <!-- For some reason using the minified versions causes find-in-file to break -->
-  <!-- <script src="acesrc/ace-min.js" type="text/javascript" charset="utf-8"></script> -->
-  <!-- <script src="acesrc/ext-language_tools-min.js"></script> -->
+  <!-- Official, pinned Ace 1.45.2. Keep all three scripts from the same version. -->
+  <script src="../node_modules/ace-builds/src/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../node_modules/ace-builds/src/mode-yaml.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../node_modules/ace-builds/src/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
+  <script>
+    // Ace dynamically loads its own bundled themes/modes relative to this path.
+    // It must never load incompatible modules from the retired acesrc directory.
+    ace.config.set("basePath", "../node_modules/ace-builds/src");
+    ace.config.set("modePath", "../node_modules/ace-builds/src");
+    ace.config.set("themePath", "../node_modules/ace-builds/src");
+    ace.config.set("workerPath", "../node_modules/ace-builds/src");
+  </script>
 
   <script>
     require('./controller.js');
