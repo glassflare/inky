@@ -4,7 +4,7 @@ const ipc = electron.ipcRenderer;
 const path = require("path");
 const fs = require("fs");
 const { pathToFileURL } = require("url");
-const $ = window.jQuery = require('jquery');
+const $ = window.$ = window.jQuery = require('jquery');
 
 // Debug
 //remote.getCurrentWindow().webContents.openDevTools();
