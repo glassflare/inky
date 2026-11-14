@@ -1,4 +1,4 @@
-const $ = window.jQuery = require('./jquery-2.2.3.min.js');
+const $ = window.jQuery = require('jquery');
 const i18n = require('./i18n.js');
 const InkRichText = require('./richTextDom.js');
 const { isSoundTag } = require("./audioTags.js");
