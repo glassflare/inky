@@ -17,7 +17,7 @@ describe("Preview and Web Export parity", function () {
                 NodeFilter: global.NodeFilter
             };
             const playerPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             let preview, exported;
             try {
                 const source = "First line.\n#screen\nSecond line.\n* [Continue]\n  Final line.\n  -> END\n";
