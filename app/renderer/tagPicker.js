@@ -98,7 +98,9 @@ function lineTagAt(lines, row, column) {
                 }
             }
         }
-        hash = line.lastIndexOf("#", hash - 1);
+        // String.lastIndexOf treats a negative fromIndex as position zero.
+        // Without this guard a rejected tag at column 0 loops forever.
+        hash = hash === 0 ? -1 : line.lastIndexOf("#", hash - 1);
     }
     return null;
 }
