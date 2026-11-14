@@ -22,13 +22,12 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: app/package-lock.json
-      - name: Resolve jQuery 4 lock and install pinned dependencies
+      - name: Install exact pinned dependencies
         run: |
           set -euo pipefail
           cd app
-          npm install --package-lock-only --ignore-scripts
-          node -e "const x=require('./package-lock.json'); console.log('JQUERY_LOCK_ENTRY='+JSON.stringify(x.packages['node_modules/jquery']))"
           npm ci
+          node -e "const x=require('./package-lock.json'); if(x.packages['node_modules/jquery'].version!=='4.0.0') process.exit(1)"
       - name: Run all tests including grapheme regression
         run: |
           set -euo pipefail
