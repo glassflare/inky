@@ -32,7 +32,7 @@ describe("scene titles", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
@@ -78,7 +78,7 @@ describe("scene titles", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
@@ -128,7 +128,7 @@ describe("scene titles", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
