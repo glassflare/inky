@@ -484,7 +484,7 @@ describe("pagination in the Preview player", function () {
         });
         const previous = { window: global.window, document: global.document, DOMParser: global.DOMParser };
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
         global.window = window;
         global.document = window.document;
         global.DOMParser = window.DOMParser;
