@@ -1,0 +1,49 @@
+name: CodeMirror 6 independent Unicode selection laboratory
+
+on:
+  push:
+    branches:
+      - experiment/codemirror-6-replacement
+
+permissions:
+  contents: read
+
+jobs:
+  codemirror-mouse:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Resolve isolated CodeMirror laboratory dependencies
+        run: |
+          set -euo pipefail
+          cd app
+          npm install --package-lock-only --ignore-scripts
+          npm ci
+          node -e "for(const n of ['codemirror','@codemirror/view','@codemirror/state','esbuild']) console.log(n,require(n+'/package.json').version)"
+      - name: Bundle CodeMirror 6 only for independent mouse test
+        run: |
+          set -euo pipefail
+          cd app
+          ./node_modules/.bin/esbuild codemirror-lab-entry.js --bundle --platform=browser --format=iife --outfile=renderer/codemirror-lab.bundle.js
+          test -s renderer/codemirror-lab.bundle.js
+      - name: Run native Electron / X11 mouse selection against adjacent graphemes
+        env:
+          INKY_CODEMIRROR_OUTPUT: ${{ runner.temp }}/codemirror-test-evidence
+        run: xvfb-run -a node .github/scripts/codemirror-mouse-lab.cjs
+      - name: Upload laboratory findings regardless of pass or fail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inky-CodeMirror-6-Mouse-Selection-Experiment
+          path: ${{ runner.temp }}/codemirror-test-evidence/
+          retention-days: 7
+          if-no-files-found: warn
