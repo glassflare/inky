@@ -1,4 +1,4 @@
-const $ = window.jQuery = require('./jquery-2.2.3.min.js');
+const $ = window.jQuery = require('jquery');
 
 const editor = ace.edit("editor");
 
