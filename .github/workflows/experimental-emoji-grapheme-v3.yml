@@ -82,7 +82,7 @@ jobs:
 
 
       - name: Run native Electron Unicode v3 regression with mouse input
-        run: xvfb-run -a node .github/scripts/native-unicode-v3.cjs
+        run: xvfb-run -a node .github/scripts/native-unicode-v2.cjs
 
       - name: Retrieve and verify source-map-enabled r117 compiler
         run: |
