@@ -4,7 +4,7 @@ const { JSDOM } = require("jsdom");
 describe("exact Preview source mapping", function () {
     let dom, old, player, jumps;
     const playerPath = require.resolve("../renderer/playerView.js");
-    const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+    const jqueryPath = require.resolve("jquery");
 
     beforeEach(function () {
         dom = new JSDOM('<div id="player"><div class="innerText active"></div></div>');
