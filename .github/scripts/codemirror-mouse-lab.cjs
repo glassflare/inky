@@ -11,7 +11,8 @@ const {launch, sleep} = require("../../app/test/helpers/preview-session.cjs");
 
 const appRoot=path.resolve(__dirname,"../../app");
 const binary=path.join(appRoot,"node_modules/.bin/electron");
-const output=fs.mkdtempSync(path.join(os.tmpdir(),"inky-codemirror-mouse-"));
+const output=process.env.INKY_CODEMIRROR_OUTPUT || fs.mkdtempSync(path.join(os.tmpdir(),"inky-codemirror-mouse-"));
+fs.mkdirSync(output,{recursive:true});
 const clusters=["🕯️","😀","👍🏽","👩‍👩‍👦","🧑🏽‍💻","🇧🇷","🏳️‍🌈","❤️","1️⃣","e\u0301"];
 const adjacent=[
     "🕯️👍🏽🕯️",
