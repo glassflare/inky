@@ -127,6 +127,15 @@ function installGraphemeEditing(editor, Range, isInkFile) {
         };
     }
 
+    // Ace creates a new Selection whenever a different EditSession is opened.
+    // Reinstall the movement guards on each new selection (not only at startup).
+    const originalSetSession = editor.setSession;
+    editor.setSession = function(session, ...args) {
+        const result = originalSetSession.call(this, session, ...args);
+        patchSelection(this.selection);
+        return result;
+    };
+
     patchSelection(editor.selection);
     return true;
 }
