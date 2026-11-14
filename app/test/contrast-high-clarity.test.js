@@ -10,7 +10,7 @@ function withThemes(check, frame = true) {
     const dom = new JSDOM('<html><body><div class="window"></div><div id="player" style="color: #abcdef; --game-bg: #123456">Story</div>' +
         (frame ? '<iframe id="game-settings-inline"></iframe>' : '') + '</body></html>', {runScripts: "outside-only"});
     try {
-        dom.window.eval(renderer("jquery-2.2.3.min.js"));
+        dom.window.eval(fs.readFileSync(require.resolve("jquery"), "utf8"));
         const source = renderer("controller.js");
         const start = source.indexOf("function syncStyleFormIdeTheme()");
         const end = source.indexOf("updateTheme(null,", start);
