@@ -144,6 +144,21 @@ describe("Unicode selection integrity v2",function() {
         });
     }
 
+    it("stationary mouse click must not select the emoji",function(){
+        const f=fixture("A🕯️B");
+        f.selection.moveToPosition({row:0,column:2});
+        f.selection.selectToPosition({row:0,column:2});
+        assert(f.selection.isEmpty(),"plain click must not create selection");
+        f.editor.insert("X");
+        assert(f.text().includes("🕯️"),"plain click must not replace the emoji");
+    });
+    it("mouse drag from the same click can select the whole emoji",function(){
+        const f=fixture("A🕯️B");
+        f.selection.moveToPosition({row:0,column:2});
+        f.selection.selectToPosition({row:0,column:3});
+        assert.equal(f.editor.getCopyText(),"🕯️");
+    });
+
     it("YAML editing has the same grapheme protection",function(){
         const f=fixture("title: 🕯️");
         f.click(8);
