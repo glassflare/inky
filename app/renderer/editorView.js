@@ -34,10 +34,14 @@ editor.on("changeSelection", ()=>{
     events.changedLine(editor.getCursorPosition());
 })
 
-// Exclude language_tools.textCompleter but add the Ink completer
-editor.completers = editor.completers.filter(
-    (completer) => completer !== language_tools.textCompleter);
-editor.completers.push(inkCompleter);
+// Ace 1.45 initializes completers lazily; older Ace used an eager array.
+// Preserve only the intended native completers, then append Ink completion.
+const availableCompleters = Array.isArray(editor.completers)
+    ? editor.completers
+    : [language_tools.snippetCompleter, language_tools.keyWordCompleter].filter(Boolean);
+editor.completers = availableCompleters.filter(
+    (completer) => completer && completer !== language_tools.textCompleter);
+if (!editor.completers.includes(inkCompleter)) editor.completers.push(inkCompleter);
 require("./tagPicker.js").TagPicker.install(editor, inkCompleter);
 require("./fileReference.js").FileReference.install(editor, inkCompleter);
 require("./yamlTitleGuard.js").YamlTitleGuard.install(editor);
