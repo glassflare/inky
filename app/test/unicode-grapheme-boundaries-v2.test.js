@@ -21,7 +21,7 @@ function fixture(initial, active = true) {
         getSelectionAnchor() { return point(hasSelection ? anchor : cursor); },
         isEmpty() { return !hasSelection || anchor === cursor; },
         isBackwards() { return hasSelection && anchor > cursor; },
-        getRange() { return new Range(0, Math.min(anchor, cursor), 0, Math.max(anchor, cursor)); },
+        getRange() { return this.isEmpty() ? new Range(0,cursor,0,cursor) : new Range(0, Math.min(anchor, cursor), 0, Math.max(anchor, cursor)); },
         clearSelection() {hasSelection = false;anchor = cursor;},
         moveCursorTo(row, col) { assert.equal(row, 0); cursor = col; },
         setSelectionAnchor(row, col) { assert.equal(row, 0);anchor = col;hasSelection = true; },
