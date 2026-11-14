@@ -14,11 +14,11 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
 </p>
 
-<a href="docs/screenshots/showcase-editor-before-dawn.png">
-  <img src="docs/screenshots/showcase-editor-before-dawn.png" alt="Before Dawn in Inky r118: Explorer, editor with corrected active-line styling, and illustrated Title Screen" width="1000">
+<a href="docs/screenshots/default-first-open.png">
+  <img src="docs/screenshots/default-first-open.png" alt="Inky's default project, The Borrowed Star, in the editor beside its title screen" width="1000">
 </a>
 
-<p><em><strong>Before Dawn</strong> in Inky r118: the editor, project Explorer, and live Title Screen.</em></p>
+<p><em>The first-open experience: <strong>The Borrowed Star</strong>, ready to read, explore, and edit.</em></p>
 
 </div>
 
