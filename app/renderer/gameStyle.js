@@ -77,8 +77,9 @@ function isColor(v) {
 // of whitespace, control or invisible characters (tab, line break, U+00A0, U+200B...) becomes one
 // space, and the start and the end are trimmed. A field being edited may keep any number of plain
 // spaces at the start and at the end (keepEnds): everything that reads the value ignores them.
-// Letters, digits and symbols are never touched.
-const TITLE_SEPARATORS = /[\s\u0000-\u001F\u007F-\u009F\u180E\u200B-\u200F\u2060-\u2064\u206A-\u206F\u3164\uFEFF]+/g;
+// Letters, digits, symbols and Unicode grapheme joiners (U+200C/U+200D)
+// are never touched: replacing a ZWJ would destroy composed emoji titles.
+const TITLE_SEPARATORS = /[\s\u0000-\u001F\u007F-\u009F\u180E\u200B\u200E-\u200F\u2060-\u2064\u206A-\u206F\u3164\uFEFF]+/g;
 function normalizeTitleText(text, keepEnds) {
     const raw = String(text == null ? "" : text);
     const trimmed = value => value.replace(TITLE_SEPARATORS, " ").replace(/^ /, "").replace(/ $/, "");
