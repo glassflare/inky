@@ -70,12 +70,13 @@ let app;
         const geom=await app.evaluate(`(()=>{const ed=ace.edit('editor');ed.setValue(${JSON.stringify(original)},-1);
             ed.focus();ed.resize(true);const p=ed.renderer.textToScreenCoordinates(0,${start+1});
             return {x:p.pageX,y:p.pageY+ed.renderer.lineHeight/2}})()`);
+        await app.evaluate("(()=>{const ed=ace.edit('editor');const s=ed.selection;window.__inkyMouseTrace=[];for(const key of ['moveToPosition','selectToPosition','moveCursorTo','moveTo','setSelectionAnchor','setSelectionRange','selectTo']){if(typeof s[key]!=='function')continue;const fn=s[key];s[key]=function(...args){const bef={cursor:this.getCursor(),range:this.getRange()};const ret=fn.apply(this,args);window.__inkyMouseTrace.push({key,args,bef,after:{cursor:this.getCursor(),range:this.getRange()}});return ret;};}return true})()");
         await app.renderer.send("Input.dispatchMouseEvent", {
             type:"mousePressed",x:geom.x,y:geom.y,button:"left",clickCount:1});
         await app.renderer.send("Input.dispatchMouseEvent", {
             type:"mouseReleased",x:geom.x,y:geom.y,button:"left",clickCount:1});
         const beforeMouseType=await app.evaluate("(()=>{const ed=ace.edit('editor');return {cursor:ed.getCursorPosition(), selection:ed.getSelectionRange(), value:ed.getValue(), enabled:ed.$inkyGraphemeEditing, selectionEnabled:ed.selection.$inkyGraphemeEditing, activeInk:require('./inkProject.js').InkProject.currentProject?.mainInk?.isInkFile}})()");
-        console.log("DEBUG physical mouse before typing",JSON.stringify({geometry:geom,editor:beforeMouseType}));
+        console.log("DEBUG physical mouse before typing",JSON.stringify({geometry:geom,editor:beforeMouseType,trace:await app.evaluate("window.__inkyMouseTrace")}));
         await app.renderer.send("Input.insertText",{text:"x"});
         await sleep(100);
         const mouse=await app.evaluate("(()=>{const ed=ace.edit('editor');return {text:ed.getValue(),cursor:ed.getCursorPosition()}})()");
