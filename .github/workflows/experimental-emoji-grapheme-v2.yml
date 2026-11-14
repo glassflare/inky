@@ -81,6 +81,9 @@ jobs:
         run: xvfb-run -a node "$RUNNER_TEMP/emoji-editor-electron.cjs"
 
 
+      - name: Run native Electron Unicode v2 regression with mouse input
+        run: xvfb-run -a node app/test/native-unicode-v2.cjs
+
       - name: Retrieve and verify source-map-enabled r117 compiler
         run: |
           set -euo pipefail
