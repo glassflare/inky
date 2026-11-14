@@ -226,7 +226,7 @@ jobs:
           for file in light dark contrast focus; do
             cmp "app/renderer/$file.css" "$RUNNER_TEMP/r118/appimage/squashfs-root/opt/inky/resources/app/renderer/$file.css"
           done
-          cmp app/main-process/inklecate.js "$RUNNER_TEMP/r118/appimage/squashfs-root/opt/inky/resources/app/main-process/inklecate.js
+          cmp app/main-process/inklecate.js "$RUNNER_TEMP/r118/appimage/squashfs-root/opt/inky/resources/app/main-process/inklecate.js"
           cmp app/main-process/inkJsonStream.js "$RUNNER_TEMP/r118/appimage/squashfs-root/opt/inky/resources/app/main-process/inkJsonStream.js"
           test "$(node -p "require('$RUNNER_TEMP/r118/appimage/squashfs-root/opt/inky/resources/app/package.json').distributionVersion")" = "0.15.2-118"
           test ! -f "$RUNNER_TEMP/r118/appimage/squashfs-root/opt/inky/resources/app/renderer/unicodeGraphemeEditing.js"
