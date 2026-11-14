@@ -28,7 +28,7 @@ jobs:
           cd app
           npm install --package-lock-only --ignore-scripts
           npm ci
-          node -e "for(const n of ['codemirror','@codemirror/view','@codemirror/state','esbuild']) console.log(n,require(n+'/package.json').version)"
+          node -e "const p=require('./package-lock.json').packages; for(const n of ['codemirror','@codemirror/view','@codemirror/state','esbuild']) console.log(n,p['node_modules/'+n].version)"
       - name: Bundle CodeMirror 6 only for independent mouse test
         run: |
           set -euo pipefail
