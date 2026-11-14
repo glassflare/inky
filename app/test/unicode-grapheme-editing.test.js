@@ -36,6 +36,8 @@ function mock(initial, ink = true) {
             getCursor: pos,
             isEmpty: () => selection === null || selection.start.column === selection.end.column,
             setSelectionRange: r => { selection = r; column = r.end.column; },
+            getSelectionAnchor: () => selection ? selection.start : pos(),
+            isBackwards: () => false,
             moveCursorTo: (_row, col) => { column = col; },
             moveCursorLeft() { column = Math.max(0, column - 1); },
             moveCursorRight() { column = Math.min(value.length, column + 1); },
@@ -137,11 +139,18 @@ describe("Unicode emoji grapheme editing", function() {
         assert.strictEqual(f.col(), 1);
     });
 
-    it("does not change YAML editing when the active file is not Ink", function () {
+    it("keeps a disabled editor unchanged outside managed files", function () {
         const f = mock("A🕯️B", false);
         f.moveTo(4);
         f.editor.remove("left");
         assert.notStrictEqual(f.value(), "AB");
+    });
+
+    it("protects project YAML when editing is enabled", function () {
+        const f = mock("title: 🕯️");
+        f.moveTo("title: 🕯️".length);
+        f.editor.remove("left");
+        assert.strictEqual(f.value(), "title: ");
     });
 
     it("retains a valid UTF-8 roundtrip after removing emoji", function () {
