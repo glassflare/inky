@@ -92,14 +92,17 @@ jobs:
           dpkg-deb -x "$RUNNER_TEMP/r117/inky.deb" "$RUNNER_TEMP/r117/unpacked"
           compiler="$RUNNER_TEMP/r117/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux"
           test -x "$compiler"
-          install -m 755 "$compiler" app/main-process/ink/inklecate_linux
+          # Keep the original LFS compiler intact for reference-side comparison.
+          sha256sum "$compiler"
           sha256sum app/main-process/ink/inklecate_linux
 
       - name: Run native compiler source-map regressions
         run: |
           set -euo pipefail
-          INKY_SOURCE_MAP_COMPILER="$PWD/app/main-process/ink/inklecate_linux" \
+          INKY_SOURCE_MAP_COMPILER="$RUNNER_TEMP/r117/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux" \
             node --test compiler/test/source-map-regression.test.cjs
+          # Only after source-map parity is verified, embed the r117 compiler.
+          install -m 755 "$RUNNER_TEMP/r117/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux" app/main-process/ink/inklecate_linux
 
       - name: Package standalone Inky Extended test AppImage
         run: |
