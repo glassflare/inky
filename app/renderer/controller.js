@@ -4,7 +4,7 @@ const ipc = electron.ipcRenderer;
 const path = require("path");
 const fs = require("fs");
 const { pathToFileURL } = require("url");
-const $ = window.jQuery = require('./jquery-2.2.3.min.js');
+const $ = window.jQuery = require('jquery');
 
 // Debug
 //remote.getCurrentWindow().webContents.openDevTools();
