@@ -11,7 +11,7 @@ describe("preview page layout", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
@@ -54,7 +54,7 @@ describe("preview page layout", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
         global.window = dom.window;
         global.document = dom.window.document;
         global.DOMParser = dom.window.DOMParser;
@@ -135,7 +135,7 @@ describe("preview page layout", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
         global.window = dom.window;
         global.document = dom.window.document;
         global.DOMParser = dom.window.DOMParser;
@@ -188,7 +188,7 @@ describe("preview page layout", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
@@ -235,7 +235,7 @@ describe("preview page layout", function () {
         const previousDocument = global.document;
         const previousDOMParser = global.DOMParser;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
@@ -282,7 +282,7 @@ describe("preview page layout", function () {
         const previousDocument = global.document;
         const previousDOMParser = global.DOMParser;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
@@ -291,7 +291,7 @@ describe("preview page layout", function () {
         delete require.cache[playerViewPath];
 
         try {
-            const $ = require("../renderer/jquery-2.2.3.min.js");
+            const $ = require("jquery");
             const animations = [];
             $.fn.animate = function(properties, duration, callback) {
                 const complete = Array.from(arguments).find(argument => typeof argument === "function");
@@ -336,7 +336,7 @@ describe("preview page layout", function () {
         const previousDocument = global.document;
         const previousDOMParser = global.DOMParser;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
 
         global.window = dom.window;
         global.document = dom.window.document;
@@ -345,7 +345,7 @@ describe("preview page layout", function () {
         delete require.cache[playerViewPath];
 
         try {
-            const $ = require("../renderer/jquery-2.2.3.min.js");
+            const $ = require("jquery");
             const animatedHeights = [];
             $.fn.animate = function(properties, duration) {
                 if( Object.prototype.hasOwnProperty.call(properties, "height") )
@@ -387,13 +387,13 @@ describe("preview page layout", function () {
             const previousWindow = global.window;
             const previousDocument = global.document;
             const playerViewPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             global.window = dom.window;
             global.document = dom.window.document;
             delete require.cache[jqueryPath];
             delete require.cache[playerViewPath];
             try {
-                const $ = require("../renderer/jquery-2.2.3.min.js");
+                const $ = require("jquery");
                 const playerView = require("../renderer/playerView.js").PlayerView;
                 const animations = [];
                 $.fn.animate = function(properties, duration) {
@@ -492,7 +492,7 @@ describe("preview page layout", function () {
             const previousDOMParser = global.DOMParser;
             const previousNodeFilter = global.NodeFilter;
             const playerViewPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             global.window = dom.window;
             global.document = dom.window.document;
             global.DOMParser = dom.window.DOMParser;
@@ -552,7 +552,7 @@ describe("preview page layout", function () {
             const previousDOMParser = global.DOMParser;
             const previousNodeFilter = global.NodeFilter;
             const playerViewPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             global.window = dom.window;
             global.document = dom.window.document;
             global.DOMParser = dom.window.DOMParser;
@@ -613,7 +613,7 @@ describe("preview page layout", function () {
             const previousDOMParser = global.DOMParser;
             const previousNodeFilter = global.NodeFilter;
             const playerViewPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             global.window = dom.window;
             global.document = dom.window.document;
             global.DOMParser = dom.window.DOMParser;
@@ -660,7 +660,7 @@ describe("preview page layout", function () {
             const previousDocument = global.document;
             const previousDOMParser = global.DOMParser;
             const playerViewPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             global.window = dom.window;
             global.document = dom.window.document;
             global.DOMParser = dom.window.DOMParser;
@@ -736,7 +736,7 @@ describe("preview page layout", function () {
             const previousDOMParser = global.DOMParser;
             const previousNodeFilter = global.NodeFilter;
             const playerViewPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             global.window = dom.window;
             global.document = dom.window.document;
             global.DOMParser = dom.window.DOMParser;
@@ -806,7 +806,7 @@ describe("preview page layout", function () {
             const previousDOMParser = global.DOMParser;
             const previousNodeFilter = global.NodeFilter;
             const playerViewPath = require.resolve("../renderer/playerView.js");
-            const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+            const jqueryPath = require.resolve("jquery");
             global.window = dom.window;
             global.document = dom.window.document;
             global.DOMParser = dom.window.DOMParser;
