@@ -74,12 +74,12 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
 
     // A defensive final boundary check for copy/cut or APIs that bypass mouse
     // handlers. Preserve selection orientation and never normalize Unicode.
-    function snapSelection() {
+    function snapSelection(emptyDirection) {
         const selection = editor.selection;
         if (!enabled()) return false;
         if (selection.isEmpty()) {
             const cursor = selection.getCursor();
-            const col = snap(cursor.row, cursor.column);
+            const col = snap(cursor.row, cursor.column, emptyDirection);
             if (col === cursor.column) return false;
             selection.moveCursorTo(cursor.row, col);
             return true;
@@ -206,7 +206,7 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
             return remove.call(this, dir, ...args);
         };
         editor.insert = function(text, ...args) {
-            if (enabled()) snapSelection();
+            if (enabled()) snapSelection("right");
             return insert.call(this, text, ...args);
         };
 
