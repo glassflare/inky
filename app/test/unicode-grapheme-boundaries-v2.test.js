@@ -148,6 +148,7 @@ describe("Unicode selection integrity v2",function() {
         const f=fixture("A🕯️B");
         f.selection.moveToPosition({row:0,column:2});
         f.selection.selectToPosition({row:0,column:2});
+        f.selection.selectToPosition({row:0,column:2}); // press and release
         assert(f.selection.isEmpty(),"plain click must not create selection");
         f.editor.insert("X");
         assert(f.text().includes("🕯️"),"plain click must not replace the emoji");
