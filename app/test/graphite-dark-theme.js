@@ -39,7 +39,7 @@ describe("Graphite replacement for the Dark IDE theme", function() {
         const { JSDOM } = require("jsdom");
         const dom = new JSDOM('<html><body><div class="window"></div><iframe id="game-settings-inline"></iframe></body></html>', {runScripts: "outside-only"});
         try {
-            dom.window.eval(load("jquery-2.2.3.min.js"));
+            dom.window.eval(fs.readFileSync(require.resolve("jquery"), "utf8"));
             const controller = load("controller.js");
             const start = controller.indexOf("function syncStyleFormIdeTheme()");
             const end = controller.indexOf("updateTheme(null,", start);
