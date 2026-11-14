@@ -79,3 +79,59 @@ jobs:
           NODE
       - name: Run native Electron GUI smoke on older Ace with grapheme patch
         run: xvfb-run -a node "$RUNNER_TEMP/emoji-editor-electron.cjs"
+
+
+      - name: Retrieve and verify source-map-enabled r117 compiler
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r117" experiment
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/glassflare/inky/releases/download/v0.15.2-117/Inky-Extended-0.15.2-117-amd64.deb \
+            -o "$RUNNER_TEMP/r117/inky.deb"
+          echo "27b45b3064600b31071ffdb6e960b7b47df6091e7aa76fe16cab3e118999b7fe  $RUNNER_TEMP/r117/inky.deb" | sha256sum -c -
+          dpkg-deb -x "$RUNNER_TEMP/r117/inky.deb" "$RUNNER_TEMP/r117/unpacked"
+          compiler="$RUNNER_TEMP/r117/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux"
+          test -x "$compiler"
+          install -m 755 "$compiler" app/main-process/ink/inklecate_linux
+          sha256sum app/main-process/ink/inklecate_linux
+
+      - name: Run native compiler source-map regressions
+        run: |
+          set -euo pipefail
+          INKY_SOURCE_MAP_COMPILER="$PWD/app/main-process/ink/inklecate_linux" \
+            node --test compiler/test/source-map-regression.test.cjs
+
+      - name: Package standalone Inky Extended test AppImage
+        run: |
+          set -euo pipefail
+          ./app/node_modules/.bin/electron-packager app Inky \
+            --platform=linux --arch=x64 --out=dist --prune --ignore='inklecate_mac'
+          cmp app/main-process/ink/inklecate_linux \
+            dist/Inky-linux-x64/resources/app/main-process/ink/inklecate_linux
+          mkdir -p AppDir/opt/inky AppDir/usr/share/pixmaps
+          install -m 755 resources/AppRun AppDir/AppRun
+          cp resources/com.inkle.inky.desktop AppDir/
+          cp app/renderer/about/icon-round.png AppDir/inky.png
+          cp app/renderer/about/icon-round.png AppDir/usr/share/pixmaps/inky.png
+          cp -a dist/Inky-linux-x64/. AppDir/opt/inky/
+          ARCH=x86_64 ./build/appimagetool-x86_64.AppImage --appimage-extract-and-run \
+            -n AppDir experiment/Inky-Extended-PR16-Emoji-Grapheme-Test-x86_64.AppImage
+          chmod +x experiment/Inky-Extended-PR16-Emoji-Grapheme-Test-x86_64.AppImage
+          test "$(wc -c < experiment/Inky-Extended-PR16-Emoji-Grapheme-Test-x86_64.AppImage)" -gt 10000000
+          (cd experiment && sha256sum Inky-Extended-PR16-Emoji-Grapheme-Test-x86_64.AppImage > SHA256SUMS.txt)
+          {
+            echo "Experimental Unicode grapheme AppImage — not a stable release"
+            echo "Build head: $(git rev-parse HEAD)"
+            echo "Feature branch: fix/emoji-grapheme-editing"
+            echo "Base: master after PR #15"
+            echo "Compiler: verified source-map-enabled r117 Debian compiler"
+            sha256sum app/main-process/ink/inklecate_linux
+            echo "No release or merge performed"
+          } > experiment/BUILD-INFO.txt
+      - name: Upload test artifact only
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inky-PR16-Emoji-Grapheme-Experimental-AppImage
+          path: experiment/
+          retention-days: 7
+          if-no-files-found: error
