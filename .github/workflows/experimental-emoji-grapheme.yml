@@ -1,0 +1,80 @@
+name: Experimental Unicode grapheme regression
+
+on:
+  push:
+    branches:
+      - ci/emoji-grapheme-regression
+
+permissions:
+  contents: read
+
+jobs:
+  unicode-emoji-integration:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install locked dependencies
+        run: cd app && npm ci
+      - name: Run all tests including grapheme regression
+        run: |
+          set -euo pipefail
+          cd app
+          xvfb-run -a npm test
+          npm run test:web-export
+
+      - name: Create real Electron editor regression
+        run: |
+          cat > "$RUNNER_TEMP/emoji-editor-electron.cjs" <<'NODE'
+          "use strict";
+          const path = require("node:path");
+          const os = require("node:os");
+          const fs = require("node:fs");
+          const assert = require("node:assert/strict");
+          const repo = process.cwd();
+          const { launch } = require(path.join(repo, "app/test/helpers/preview-session.cjs"));
+          const output = fs.mkdtempSync(path.join(os.tmpdir(), "inky-emoji-ci-"));
+          const bin = path.join(repo, "app/node_modules/.bin/electron");
+          let app;
+          (async() => {
+            try {
+              app = await launch({
+                binary: bin, appPath: path.join(repo, "app"), output,
+                flags: ["--no-sandbox"],
+                viewSettings: { theme: "light", zoom: "100" }
+              });
+              await app.until("window.ace && !!ace.edit('editor') && require('./inkProject.js').InkProject.currentProject?.ready");
+              const tests = [
+                {input: "* [🕯️ Aproximar-se da casa] -> END", emoji: "🕯️"},
+                {input: "* [👩‍👩‍👦 Seguir] -> END", emoji: "👩‍👩‍👦"},
+                {input: "* [🇧🇷 Seguir] -> END", emoji: "🇧🇷"},
+                {input: "* [👍🏽 Seguir] -> END", emoji: "👍🏽"}
+              ];
+              for (const {input,emoji} of tests) {
+                const at = 3;
+                const expression = "(() => { const ed=ace.edit('editor');ed.setValue(" +
+                  JSON.stringify(input) + ",-1);ed.clearSelection();ed.moveCursorTo(0," +
+                  (at + emoji.length) + ");ed.remove('left');return {value:ed.getValue(),column:ed.getCursorPosition().column};})()";
+                const result = await app.evaluate(expression);
+                assert.equal(result.value, input.replace(emoji, ""), "Backspace must delete entire emoji");
+                assert.equal(result.column, at, "Cursor must stay at beginning of removed cluster");
+                console.log("PASS native renderer Backspace:",emoji);
+              }
+              await app.evaluate("(()=>{const ed=ace.edit('editor');ed.setValue('A🕯️B',-1);ed.clearSelection();ed.moveCursorTo(0,1);ed.focus();return true})()");
+              await app.renderer.send("Input.dispatchKeyEvent", {type:"rawKeyDown",windowsVirtualKeyCode:39,nativeVirtualKeyCode:39,key:"ArrowRight",code:"ArrowRight"});
+              await app.renderer.send("Input.dispatchKeyEvent", {type:"keyUp",windowsVirtualKeyCode:39,nativeVirtualKeyCode:39,key:"ArrowRight",code:"ArrowRight"});
+              await app.until("ace.edit('editor').getCursorPosition().column === 4");
+              console.log("PASS native keyboard ArrowRight skips whole emoji");
+            } finally {if(app) await app.close();}
+          })().then(() => process.exit(0), e => {console.error(e.stack||e);process.exit(1)});
+          NODE
+      - name: Run native Electron GUI smoke on older Ace with grapheme patch
+        run: xvfb-run -a node "$RUNNER_TEMP/emoji-editor-electron.cjs"
