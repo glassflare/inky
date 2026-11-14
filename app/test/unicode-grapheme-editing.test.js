@@ -19,6 +19,15 @@ function mock(initial, ink = true) {
     const pos = () => ({row: 0, column});
     const editor = {
         session: { getLine: row => { assert.strictEqual(row, 0); return line(); } },
+        setSession(next) {
+            this.session = next;
+            this.selection = {
+                ...this.selection,
+                moveCursorLeft() { column = Math.max(0, column - 1); },
+                moveCursorRight() { column = Math.min(value.length, column + 1); }
+            };
+            delete this.selection.$inkyGraphemeEditing;
+        },
         getCursorPosition: pos,
         getSelectionRange: () => selection || new Range(0, column, 0, column),
         getReadOnly: () => false,
@@ -111,6 +120,16 @@ describe("Unicode emoji grapheme editing", function() {
 
     it("preserves standard right/left movement outside emojis", function () {
         const f = mock("A🕯️B");
+        f.moveTo(1);
+        f.editor.selection.moveCursorRight();
+        assert.strictEqual(f.col(), 4);
+        f.editor.selection.moveCursorLeft();
+        assert.strictEqual(f.col(), 1);
+    });
+
+    it("reinstalls cursor movement guards after Ace changes the active session", function () {
+        const f = mock("A🕯️B");
+        f.editor.setSession({getLine: () => f.value()});
         f.moveTo(1);
         f.editor.selection.moveCursorRight();
         assert.strictEqual(f.col(), 4);
