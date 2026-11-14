@@ -113,6 +113,25 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
             return move.call(this, row, col, keepDesiredColumn);
         };
 
+        // At the first pixel of a drag, Ace's getRange().isEmpty() is still
+        // true even though selectTo has established an anchor. Preserve the
+        // intended direction explicitly while Ace executes the selection.
+        for (const method of ["selectTo", "selectToPosition"]) {
+            if (typeof selection[method] !== "function") continue;
+            const original = selection[method];
+            selection[method] = function(...args) {
+                if (!enabled()) return original.apply(this, args);
+                const target = method === "selectToPosition"
+                    ? args[0] : {row: args[0], column: args[1]};
+                const anchor = this.getSelectionAnchor();
+                const cmp = pointCmp(target, anchor);
+                const prev = wordDirection;
+                wordDirection = cmp > 0 ? "right" : cmp < 0 ? "left" : null;
+                try { return original.apply(this, args); }
+                finally { wordDirection = prev; }
+            };
+        }
+
         // The mouse's click-selection code can set the anchor separately.
         const setAnchor = selection.setSelectionAnchor;
         selection.setSelectionAnchor = function(row, col) {
