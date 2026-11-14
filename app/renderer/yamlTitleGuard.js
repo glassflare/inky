@@ -85,6 +85,8 @@ function insertionFor(lines, delta) {
     return fitted === text ? null : fitted;
 }
 
+// Keep U+200C/U+200D out of the separator set: they are part of valid
+// Unicode grapheme sequences, not word-spacing characters.
 // Collapses the values of `rows` that are out of the rule, removing as little as possible so
 // the cursor stays where it is.
 function fixRows(doc, rows) {
@@ -93,7 +95,7 @@ function fixRows(doc, rows) {
         ranges.forEach(range => {
             const inner = doc.getLine(row).slice(range.start, range.end);
             const runs = [];
-            const pattern = /[\s\u0000-\u001F\u007F-\u009F\u180E\u200B-\u200F\u2060-\u2064\u206A-\u206F\u3164\uFEFF]+/g;
+            const pattern = /[\s\u0000-\u001F\u007F-\u009F\u180E\u200B\u200E-\u200F\u2060-\u2064\u206A-\u206F\u3164\uFEFF]+/g;
             let match;
             while( (match = pattern.exec(inner)) ) runs.push({ at: match.index, text: match[0] });
             runs.reverse().forEach(run => {
