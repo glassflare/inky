@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { imageMimeType } = require("./imageTypes.js");
 
-const $ = window.jQuery = require("./jquery-2.2.3.min.js");
+const $ = window.jQuery = require('jquery');
 const $viewer = $("#image-viewer");
 const $editor = $("#editor");
 const $image = $viewer.find(".image-viewer-image");
