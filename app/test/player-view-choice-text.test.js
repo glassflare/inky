@@ -9,7 +9,7 @@ describe("Preview selected choice text", function () {
         const previousDOMParser = global.DOMParser;
         const previousNodeFilter = global.NodeFilter;
         const playerViewPath = require.resolve("../renderer/playerView.js");
-        const jqueryPath = require.resolve("../renderer/jquery-2.2.3.min.js");
+        const jqueryPath = require.resolve("jquery");
         const i18n = require("../renderer/i18n.js");
         const translate = i18n._;
         i18n._ = text => text;
