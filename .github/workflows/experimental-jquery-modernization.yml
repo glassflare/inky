@@ -89,6 +89,9 @@ jobs:
       - name: Assert modern Ace 1.45.2 is active in Electron with all custom integrations
         run: xvfb-run -a node .github/scripts/ace-modernization-smoke.cjs
 
+      - name: Verify actual jQuery 4 and jsTree Explorer in Electron
+        run: xvfb-run -a node .github/scripts/jquery-modernization-smoke.cjs
+
       - name: Run native Electron grapheme regression on Ace 1.45.2
         run: xvfb-run -a node .github/scripts/native-unicode-v2.cjs
 
@@ -119,11 +122,14 @@ jobs:
         run: |
           set -euo pipefail
           ./app/node_modules/.bin/electron-packager app Inky \
-            --platform=linux --arch=x64 --out=dist --prune --ignore='inklecate_mac|^/renderer/acesrc/'
+            --platform=linux --arch=x64 --out=dist --prune --ignore='inklecate_mac|^/renderer/acesrc/|jquery-2\\.2\\.3\\.min\\.js'
           cmp app/main-process/ink/inklecate_linux \
             dist/Inky-linux-x64/resources/app/main-process/ink/inklecate_linux
           test -s dist/Inky-linux-x64/resources/app/node_modules/ace-builds/src/ace.js
           test ! -e dist/Inky-linux-x64/resources/app/renderer/acesrc/ace.js
+          test -s dist/Inky-linux-x64/resources/app/node_modules/jquery/dist/jquery.js
+          test ! -e dist/Inky-linux-x64/resources/app/renderer/jquery-2.2.3.min.js
+          node -e "if(require('./dist/Inky-linux-x64/resources/app/node_modules/jquery/package.json').version!=='4.0.0')process.exit(1)"
           node -e "if(require('./dist/Inky-linux-x64/resources/app/node_modules/ace-builds/package.json').version!=='1.45.2')process.exit(1)"
           mkdir -p AppDir/opt/inky AppDir/usr/share/pixmaps
           install -m 755 resources/AppRun AppDir/AppRun
