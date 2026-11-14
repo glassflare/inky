@@ -1,0 +1,176 @@
+name: PR14 AppImage - verified r117 source maps
+
+on:
+  push:
+    branches:
+      - ci/pr14-appimage-r117-sourcemap
+
+permissions:
+  contents: read
+
+jobs:
+  source-map-checked-appimage:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout theme fix and original compiler via Git LFS
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Verify original compiler and install locked dependencies
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          test "$(wc -c < app/main-process/ink/inklecate_linux)" -gt 1024
+          test -x app/main-process/ink/inklecate_linux
+          cd app && npm ci
+
+      - name: Obtain source-map-capable compiler from published r117 Debian release
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r117-reference"
+          curl --fail --location --retry 3 --silent --show-error \
+            'https://github.com/glassflare/inky/releases/download/v0.15.2-117/Inky-Extended-0.15.2-117-amd64.deb' \
+            --output "$RUNNER_TEMP/r117-reference/r117.deb"
+          echo '27b45b3064600b31071ffdb6e960b7b47df6091e7aa76fe16cab3e118999b7fe  '"$RUNNER_TEMP/r117-reference/r117.deb" | sha256sum -c -
+          dpkg-deb --extract "$RUNNER_TEMP/r117-reference/r117.deb" "$RUNNER_TEMP/r117-reference/unpacked"
+          test -x "$RUNNER_TEMP/r117-reference/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux"
+          install -m 755 \
+            "$RUNNER_TEMP/r117-reference/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux" \
+            "$RUNNER_TEMP/r117-reference/r117-inklecate"
+          sha256sum "$RUNNER_TEMP/r117-reference/r117-inklecate"
+          sha256sum app/main-process/ink/inklecate_linux
+
+      - name: Test real Ink source-map protocol and source lookups against original
+        env:
+          # The regression suite compares all output, choices and DebugSource lookup offsets.
+          INKY_SOURCE_MAP_COMPILER: /unused
+        run: |
+          set -euo pipefail
+          export INKY_SOURCE_MAP_COMPILER="$RUNNER_TEMP/r117-reference/r117-inklecate"
+          node --test compiler/test/source-map-regression.test.cjs
+
+      - name: Replace only main compiler with validated r117 binary for experimental packaging
+        run: |
+          set -euo pipefail
+          install -m 755 "$RUNNER_TEMP/r117-reference/r117-inklecate" app/main-process/ink/inklecate_linux
+          cmp "$RUNNER_TEMP/r117-reference/r117-inklecate" app/main-process/ink/inklecate_linux
+          # Compatible inkjs compiler remains unchanged, like the official Linux release build.
+
+      - name: Run full application tests using validated compiler
+        run: |
+          set -euo pipefail
+          cd app
+          xvfb-run -a npm test
+          npm run test:web-export
+
+      - name: Package Electron application and compare main compiler byte-for-byte
+        run: |
+          set -euo pipefail
+          ./app/node_modules/.bin/electron-packager app Inky \
+            --platform=linux --arch=x64 --out=dist --prune \
+            --ignore='inklecate_mac' --overwrite
+          test -x dist/Inky-linux-x64/Inky
+          cmp "$RUNNER_TEMP/r117-reference/r117-inklecate" \
+            dist/Inky-linux-x64/resources/app/main-process/ink/inklecate_linux
+          for theme in light dark contrast focus; do
+            cmp "app/renderer/$theme.css" "dist/Inky-linux-x64/resources/app/renderer/$theme.css"
+          done
+
+      - name: Create end-to-end native Electron Alt-click test
+        run: |
+          cat > "$RUNNER_TEMP/pr14-native-altclick.cjs" <<'NODE'
+          "use strict";
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const os = require("node:os");
+          const assert = require("node:assert/strict");
+          const repo = process.cwd();
+          const { launch, sleep } = require(path.join(repo, "app/test/helpers/preview-session.cjs"));
+          const binary = path.join(repo, "dist/Inky-linux-x64/Inky");
+          const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "inky-pr14-altclick-"));
+          const fixture = path.join(tmp, "fixture.ink");
+          fs.writeFileSync(fixture, [
+            "-> start", "=== start ===", "# title: Source navigation",
+            "The first paragraph for native navigation.",
+            "Another narrative line.",
+            "+ [Continue] -> ending",
+            "=== ending ===", "Ending.", "-> END", ""
+          ].join("\n"));
+          let app;
+          (async () => {
+            try {
+              app = await launch({
+                binary, fixture, output: path.join(tmp, "session"),
+                flags: ["--no-sandbox"],
+                viewSettings: { theme: "light", zoom: "100", animationEnabled: false }
+              });
+              await app.until("window.ace && !!document.querySelector('#player')");
+              await app.until("Array.from(document.querySelectorAll('#player p.storyText')).some(p => p.textContent.includes('The first paragraph'))");
+              const start = await app.evaluate("(()=>{const b=document.querySelector('#player .title-screen .choice-button:not(#title-load)'); if(b){b.click();return true}return false})()");
+              if (start) await app.until("!document.querySelector('#player .title-screen:not([hidden])')");
+              const before = await app.evaluate("ace.edit('editor').getCursorPosition().row");
+              assert.notEqual(before, 3, "Precondition: caret must not already be on target source line");
+              const target = await app.evaluate("(()=>{const p=Array.from(document.querySelectorAll('#player .innerText.active p.storyText')).find(p=>p.textContent.includes('The first paragraph'));if(!p) return null;const r=p.getBoundingClientRect();return {x:r.x+Math.min(55,r.width/3),y:r.y+Math.min(12,r.height/2),width:r.width,height:r.height}})()");
+              assert(target && target.width > 0 && target.height > 0, "Visible Preview paragraph is required");
+              await app.renderer.send("Input.dispatchMouseEvent", { type: "mousePressed", x:target.x, y:target.y, button:"left", clickCount:1, modifiers:1 });
+              await app.renderer.send("Input.dispatchMouseEvent", { type: "mouseReleased", x:target.x, y:target.y, button:"left", clickCount:1, modifiers:1 });
+              await app.until("ace.edit('editor').getCursorPosition().row === 3");
+              const result = await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3)})");
+              assert.match(result.source, /The first paragraph/);
+              console.log("PASS: native Alt-click navigated from Preview into source line 4", result);
+              console.log("Temporary test profile:", tmp);
+            } finally { if(app) await app.close(); }
+          })().then(()=>process.exit(0),e=>{console.error("NATIVE ALT-CLICK REGRESSION:",e.stack||e);process.exit(1)});
+          NODE
+
+      - name: Verify actual Electron Preview Alt-click in virtual display
+        run: |
+          set -euo pipefail
+          xvfb-run -a node "$RUNNER_TEMP/pr14-native-altclick.cjs"
+
+      - name: Package isolated experimental AppImage with correct compiler
+        run: |
+          set -euo pipefail
+          mkdir -p AppDir/opt/inky AppDir/usr/share/pixmaps experiment
+          install -m 755 resources/AppRun AppDir/AppRun
+          cp resources/com.inkle.inky.desktop AppDir/
+          cp app/renderer/about/icon-round.png AppDir/inky.png
+          cp app/renderer/about/icon-round.png AppDir/usr/share/pixmaps/inky.png
+          cp -a dist/Inky-linux-x64/. AppDir/opt/inky/
+          cmp "$RUNNER_TEMP/r117-reference/r117-inklecate" \
+            AppDir/opt/inky/resources/app/main-process/ink/inklecate_linux
+          ARCH=x86_64 ./build/appimagetool-x86_64.AppImage --appimage-extract-and-run \
+            -n AppDir experiment/Inky-Extended-PR14-r117-SourceMap-Test-x86_64.AppImage
+          chmod +x experiment/Inky-Extended-PR14-r117-SourceMap-Test-x86_64.AppImage
+          test "$(wc -c < experiment/Inky-Extended-PR14-r117-SourceMap-Test-x86_64.AppImage)" -gt 10000000
+          (
+            cd experiment
+            sha256sum Inky-Extended-PR14-r117-SourceMap-Test-x86_64.AppImage > SHA256SUMS.txt
+          )
+          {
+            echo "EXPERIMENTAL build only; not a stable release."
+            echo "CSS source: fix/unified-editor-active-line"
+            echo "Build commit: $(git rev-parse HEAD)"
+            echo "Compiler source: official published r117 Debian 0.15.2-117"
+            echo "Compiler source archive SHA256: 27b45b3064600b31071ffdb6e960b7b47df6091e7aa76fe16cab3e118999b7fe"
+            sha256sum "$RUNNER_TEMP/r117-reference/r117-inklecate"
+            echo "Checks: source-map protocol regression; full npm test; web export; native Electron Alt-click."
+          } > experiment/BUILD-INFO.txt
+
+      - name: Upload test artifact without publishing any release
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inky-PR14-r117-Verified-SourceMap-AppImage
+          path: experiment/
+          if-no-files-found: error
+          retention-days: 7
