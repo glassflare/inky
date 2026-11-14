@@ -1,0 +1,229 @@
+name: r118 incremental Debian package (PR14 + PR15 only)
+
+on:
+  push:
+    branches:
+      - ci/r118-incremental-deb
+
+permissions:
+  contents: read
+
+jobs:
+  build-validate-deb:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 70
+    steps:
+      - name: Check out approved master and original compiler via LFS
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exactly approved production source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse bd8c926dedf91bf667c07c7fcf3a0a4d3a614aed)" = bd8c926dedf91bf667c07c7fcf3a0a4d3a614aed
+          test -z "$(git diff --name-only bd8c926dedf91bf667c07c7fcf3a0a4d3a614aed -- app)"
+          test -f app/main-process/inkJsonStream.js
+          test -f app/test/ink-json-stream.test.js
+          test ! -f app/renderer/unicodeGraphemeEditing.js
+          test -x app/main-process/ink/inklecate_linux
+          echo "APP source: merged PR14 and PR15, no experimental PR16"
+
+      - name: Set up Node 22 and locked dependencies
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Run full application and Web Export tests
+        run: |
+          set -euo pipefail
+          cd app
+          npm ci
+          xvfb-run -a npm test
+          npm run test:web-export
+
+      - name: Download and cryptographically verify published r117 .deb
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r118" output
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/glassflare/inky/releases/download/v0.15.2-117/Inky-Extended-0.15.2-117-amd64.deb \
+            -o "$RUNNER_TEMP/r118/r117-base.deb"
+          echo "27b45b3064600b31071ffdb6e960b7b47df6091e7aa76fe16cab3e118999b7fe  $RUNNER_TEMP/r118/r117-base.deb" | sha256sum -c -
+          echo "Base package metadata:"
+          dpkg-deb -I "$RUNNER_TEMP/r118/r117-base.deb" | head -45
+          test "$(dpkg-deb -f "$RUNNER_TEMP/r118/r117-base.deb" Architecture)" = amd64
+          test "$(dpkg-deb -f "$RUNNER_TEMP/r118/r117-base.deb" Version)" = 0.15.2-117
+
+      - name: Verify r117 source-map compiler against checked-out original
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r118/stable"
+          dpkg-deb -R "$RUNNER_TEMP/r118/r117-base.deb" "$RUNNER_TEMP/r118/stable"
+          ROOT="$RUNNER_TEMP/r118/stable"
+          test -x "$ROOT/opt/inky/Inky"
+          test -x "$ROOT/opt/inky/resources/app/main-process/ink/inklecate_linux"
+          INKY_SOURCE_MAP_COMPILER="$ROOT/opt/inky/resources/app/main-process/ink/inklecate_linux" \
+            node --test compiler/test/source-map-regression.test.cjs
+          sha256sum "$ROOT/opt/inky/resources/app/main-process/ink/inklecate_linux"
+
+      - name: Apply only PR14 and PR15 runtime files to r117 package
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/r118/stable"
+          TARGET="$ROOT/opt/inky/resources/app"
+          test -f "$TARGET/renderer/light.css"
+          test -f "$TARGET/renderer/dark.css"
+          test -f "$TARGET/renderer/contrast.css"
+          test -f "$TARGET/renderer/focus.css"
+          test -f "$TARGET/main-process/inklecate.js"
+          test -f "$TARGET/main-process/sourceMapProtocol.js"
+          for theme in light dark contrast focus; do
+            install -m 644 "app/renderer/$theme.css" "$TARGET/renderer/$theme.css"
+            cmp "app/renderer/$theme.css" "$TARGET/renderer/$theme.css"
+          done
+          install -m 644 app/main-process/inklecate.js "$TARGET/main-process/inklecate.js"
+          install -m 644 app/main-process/inkJsonStream.js "$TARGET/main-process/inkJsonStream.js"
+          cmp app/main-process/inklecate.js "$TARGET/main-process/inklecate.js"
+          cmp app/main-process/inkJsonStream.js "$TARGET/main-process/inkJsonStream.js"
+          node -e '
+            const fs=require("fs");
+            const p=process.argv[1];
+            const v=JSON.parse(fs.readFileSync(p,"utf8"));
+            if(v.distributionVersion!=="0.15.2-117")throw new Error("Unexpected baseline revision "+v.distributionVersion);
+            v.communityRevision=118;
+            v.distributionVersion="0.15.2-118";
+            fs.writeFileSync(p,JSON.stringify(v,null,2)+"\n");
+          ' "$TARGET/package.json"
+          sed -i 's/^Version: 0\.15\.2-117$/Version: 0.15.2-118/' "$ROOT/DEBIAN/control"
+          grep -qx 'Version: 0.15.2-118' "$ROOT/DEBIAN/control"
+          test "$(node -p "require('$TARGET/package.json').distributionVersion")" = "0.15.2-118"
+          test ! -f "$TARGET/renderer/unicodeGraphemeEditing.js"
+          dpkg --compare-versions 0.15.2-118 gt 0.15.2-117
+          echo "Update contents: 4 theme CSS, 2 parser runtime JS, and 2 version metadata files. r117 compiler and all other resources preserved."
+
+      - name: Build incremental upgrade-compatible Debian package
+        run: |
+          set -euo pipefail
+          dpkg-deb --build --root-owner-group \
+            "$RUNNER_TEMP/r118/stable" \
+            output/Inky-Extended-0.15.2-118-amd64.deb
+          test "$(dpkg-deb -f output/Inky-Extended-0.15.2-118-amd64.deb Version)" = 0.15.2-118
+          test "$(dpkg-deb -f output/Inky-Extended-0.15.2-118-amd64.deb Architecture)" = amd64
+          test "$(dpkg-deb -f output/Inky-Extended-0.15.2-118-amd64.deb Package)" = "$(dpkg-deb -f "$RUNNER_TEMP/r118/r117-base.deb" Package)"
+          test "$(wc -c < output/Inky-Extended-0.15.2-118-amd64.deb)" -gt 100000000
+          dpkg-deb --info output/Inky-Extended-0.15.2-118-amd64.deb
+
+      - name: Independently re-extract and verify package payload
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r118/verify"
+          dpkg-deb -x output/Inky-Extended-0.15.2-118-amd64.deb "$RUNNER_TEMP/r118/verify"
+          TARGET="$RUNNER_TEMP/r118/verify/opt/inky/resources/app"
+          for theme in light dark contrast focus; do
+            cmp "app/renderer/$theme.css" "$TARGET/renderer/$theme.css"
+          done
+          cmp app/main-process/inklecate.js "$TARGET/main-process/inklecate.js"
+          cmp app/main-process/inkJsonStream.js "$TARGET/main-process/inkJsonStream.js"
+          cmp "$RUNNER_TEMP/r118/stable/opt/inky/resources/app/main-process/ink/inklecate_linux" \
+            "$TARGET/main-process/ink/inklecate_linux"
+          test -x "$RUNNER_TEMP/r118/verify/opt/inky/Inky"
+          test -x "$TARGET/main-process/ink/inklecate_linux"
+          test "$(node -p "require('$TARGET/package.json').distributionVersion")" = 0.15.2-118
+          test ! -f "$TARGET/renderer/unicodeGraphemeEditing.js"
+          echo "Verified: exact theme and parser runtime byte parity; original compiler unchanged."
+
+      - name: Write native packaged-Electron preview and Alt-click smoke test
+        run: |
+          cat > "$RUNNER_TEMP/r118/native-smoke.cjs" <<'NODE'
+          "use strict";
+          const fs = require("node:fs");
+          const os = require("node:os");
+          const path = require("node:path");
+          const assert = require("node:assert/strict");
+          const repo = process.cwd();
+          const { launch } = require(path.join(repo,"app/test/helpers/preview-session.cjs"));
+          const binary = path.join(process.env.RUNNER_TEMP,"r118/verify/opt/inky/Inky");
+          const base = fs.mkdtempSync(path.join(os.tmpdir(),"r118-deb-gui-"));
+          const fixture = path.join(base,"fixture.ink");
+          fs.writeFileSync(fixture,[
+            "-> start","=== start ===","# title: Source navigation",
+            "The first paragraph for native navigation.",
+            "Another narrative line.",
+            "+ [Continue] -> ending",
+            "=== ending ===","Ending.","-> END",""
+          ].join("\n"),"utf8");
+          (async() => {
+            for (const theme of ["light","dark","contrast","focus"]) {
+              let app;
+              try {
+                app = await launch({
+                  binary, fixture, output:path.join(base,theme),
+                  flags:["--no-sandbox"],
+                  viewSettings:{theme,zoom:"100",animationEnabled:false}
+                });
+                await app.until("window.ace && !!document.querySelector('#player')");
+                await app.until("Array.from(document.querySelectorAll('#player p.storyText')).some(p => p.textContent.includes('The first paragraph'))");
+                const start = await app.evaluate("(()=>{const b=document.querySelector('#player .title-screen .choice-button:not(#title-load)');if(b){b.click();return true;}return false;})()");
+                if(start) await app.until("!document.querySelector('#player .title-screen:not([hidden])')");
+                const target=await app.evaluate("(()=>{const p=Array.from(document.querySelectorAll('#player .innerText.active p.storyText')).find(p=>p.textContent.includes('The first paragraph'));if(!p)return null;const r=p.getBoundingClientRect();return{x:r.x+Math.min(55,r.width/3),y:r.y+Math.min(12,r.height/2),width:r.width,height:r.height};})()");
+                assert.ok(target && target.width>0 && target.height>0,"visible story paragraph needed: "+theme);
+                await app.renderer.send("Input.dispatchMouseEvent",{type:"mousePressed",x:target.x,y:target.y,button:"left",clickCount:1,modifiers:1});
+                await app.renderer.send("Input.dispatchMouseEvent",{type:"mouseReleased",x:target.x,y:target.y,button:"left",clickCount:1,modifiers:1});
+                await app.until("ace.edit('editor').getCursorPosition().row === 3");
+                const result=await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3),hasParser:!!require('./unicodeGraphemeEditing.js')})().toString()"); // overwritten below
+                console.log("PASS packaged Debian 0.15.2-118 native Preview and source-map Alt-click:",theme);
+              } finally {if(app)await app.close();}
+            }
+            console.log("Native packaged-Electron smoke test passed across all four themes. Logs at:",base);
+          })().then(()=>process.exit(0),e=>{console.error("Native r118 smoke failure:",e.stack||e);process.exit(1);});
+          NODE
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path(__import__("os").environ["RUNNER_TEMP"]+"/r118/native-smoke.cjs")
+          t=p.read_text()
+          t=t.replace("""                const result=await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3),hasParser:!!require('./unicodeGraphemeEditing.js')})().toString()"); // overwritten below""","""                const result=await app.evaluate("({row:ace.edit('editor').getCursorPosition().row,source:ace.edit('editor').session.getLine(3)})");
+                assert.equal(result.row,3);
+                assert.match(result.source,/The first paragraph/);""")
+          p.write_text(t)
+          PY
+
+      - name: Run packaged Debian Electron GUI regression under Xvfb
+        run: |
+          set -euo pipefail
+          xvfb-run -a node "$RUNNER_TEMP/r118/native-smoke.cjs"
+
+      - name: Create cryptographic manifest and build provenance
+        run: |
+          set -euo pipefail
+          (cd output && sha256sum Inky-Extended-0.15.2-118-amd64.deb > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          {
+            echo "Inky Extended 0.15.2-118 — incremental Debian package"
+            echo "Production base commit: bd8c926dedf91bf667c07c7fcf3a0a4d3a614aed"
+            echo "Changes: merged PR #14 Light/Dark/Contrast/Focus CSS and merged PR #15 JSON parser"
+            echo "Excluded: PR #16 experimental Unicode/grapheme editing"
+            echo "Base asset: Inky-Extended-0.15.2-117-amd64.deb"
+            echo "Base SHA256: 27b45b3064600b31071ffdb6e960b7b47df6091e7aa76fe16cab3e118999b7fe"
+            echo "Compiler: unchanged verified r117 source-map-capable binary"
+            echo "Tests: full npm test, Web Export, native compiler source maps, package re-extraction, and 4-theme native packaged-Electron Alt-click"
+            echo "Packaging: dpkg-deb --build --root-owner-group of verified r117 package with only approved overlays"
+            echo "This workflow publishes no GitHub release or tag."
+            dpkg-deb -f output/Inky-Extended-0.15.2-118-amd64.deb Package Version Architecture
+            sha256sum output/Inky-Extended-0.15.2-118-amd64.deb
+          } > output/BUILD-INFO.txt
+          cat output/BUILD-INFO.txt
+
+      - name: Upload validated Debian upgrade package for user
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inky-Extended-0.15.2-118-Debian13-DEB
+          path: |
+            output/Inky-Extended-0.15.2-118-amd64.deb
+            output/SHA256SUMS.txt
+            output/BUILD-INFO.txt
+          retention-days: 7
+          if-no-files-found: error
