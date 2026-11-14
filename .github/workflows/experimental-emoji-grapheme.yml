@@ -62,8 +62,9 @@ jobs:
                 const at = 3;
                 const expression = "(() => { const ed=ace.edit('editor');ed.setValue(" +
                   JSON.stringify(input) + ",-1);ed.clearSelection();ed.moveCursorTo(0," +
-                  (at + emoji.length) + ");ed.remove('left');return {value:ed.getValue(),column:ed.getCursorPosition().column};})()";
+                  (at + emoji.length) + ");const state={installed:ed.$inkyGraphemeEditing,selectionInstalled:ed.selection.$inkyGraphemeEditing,mode:ed.session.getMode().$id,activeFile:require('./inkProject.js').InkProject.currentProject?.mainInk?.isInkFile,before:ed.getCursorPosition(),line:ed.session.getLine(0)};ed.remove('left');return {value:ed.getValue(),column:ed.getCursorPosition().column,debug:state};})()";
                 const result = await app.evaluate(expression);
+                console.log('DEBUG',JSON.stringify(result));
                 assert.equal(result.value, input.replace(emoji, ""), "Backspace must delete entire emoji");
                 assert.equal(result.column, at, "Cursor must stay at beginning of removed cluster");
                 console.log("PASS native renderer Backspace:",emoji);
