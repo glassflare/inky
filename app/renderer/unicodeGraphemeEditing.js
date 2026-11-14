@@ -140,7 +140,9 @@ function installGraphemeEditing(editor, Range, isEditableFile) {
                 const cmp = pointCmp(target, anchor);
                 const sameInitialClick = method === "selectToPosition" && mouseStart &&
                     pointCmp(mouseStart, target) === 0 && this.isEmpty();
-                mouseStart = null;
+                // Ace fires selection updates on both press and release. Keep
+                // the original click until the raw pixel position really changes.
+                if (!sameInitialClick) mouseStart = null;
                 const prev = wordDirection;
                 wordDirection = sameInitialClick ? null : cmp > 0 ? "right" : cmp < 0 ? "left" : null;
                 selectionDepth++;
