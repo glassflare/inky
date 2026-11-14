@@ -1,0 +1,143 @@
+name: Experimental Unicode grapheme v3 regression and AppImage
+
+on:
+  push:
+    branches:
+      - fix/emoji-grapheme-editing-v3
+
+permissions:
+  contents: read
+
+jobs:
+  unicode-emoji-integration:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install locked dependencies
+        run: cd app && npm ci
+      - name: Run all tests including grapheme regression
+        run: |
+          set -euo pipefail
+          cd app
+          xvfb-run -a npm test
+          npm run test:web-export
+
+      - name: Create real Electron editor regression
+        run: |
+          cat > "$RUNNER_TEMP/emoji-editor-electron.cjs" <<'NODE'
+          "use strict";
+          const path = require("node:path");
+          const os = require("node:os");
+          const fs = require("node:fs");
+          const assert = require("node:assert/strict");
+          const repo = process.cwd();
+          const { launch } = require(path.join(repo, "app/test/helpers/preview-session.cjs"));
+          const output = fs.mkdtempSync(path.join(os.tmpdir(), "inky-emoji-ci-"));
+          const bin = path.join(repo, "app/node_modules/.bin/electron");
+          let app;
+          (async() => {
+            try {
+              app = await launch({
+                binary: bin, appPath: path.join(repo, "app"), output,
+                flags: ["--no-sandbox"],
+                viewSettings: { theme: "light", zoom: "100" }
+              });
+              await app.until("window.ace && !!ace.edit('editor') && require('./inkProject.js').InkProject.currentProject?.ready");
+              const tests = [
+                {input: "* [🕯️ Aproximar-se da casa] -> END", emoji: "🕯️"},
+                {input: "* [👩‍👩‍👦 Seguir] -> END", emoji: "👩‍👩‍👦"},
+                {input: "* [🇧🇷 Seguir] -> END", emoji: "🇧🇷"},
+                {input: "* [👍🏽 Seguir] -> END", emoji: "👍🏽"}
+              ];
+              for (const {input,emoji} of tests) {
+                const at = 3;
+                const expression = "(() => { const ed=ace.edit('editor');ed.setValue(" +
+                  JSON.stringify(input) + ",-1);ed.clearSelection();ed.moveCursorTo(0," +
+                  (at + emoji.length) + ");const state={installed:ed.$inkyGraphemeEditing,selectionInstalled:ed.selection.$inkyGraphemeEditing,mode:ed.session.getMode().$id,activeFile:require('./inkProject.js').InkProject.currentProject?.mainInk?.isInkFile,before:ed.getCursorPosition(),line:ed.session.getLine(0)};ed.remove('left');return {value:ed.getValue(),column:ed.getCursorPosition().column,debug:state};})()";
+                const result = await app.evaluate(expression);
+                console.log('DEBUG',JSON.stringify(result));
+                assert.equal(result.value, input.replace(emoji, ""), "Backspace must delete entire emoji");
+                assert.equal(result.column, at, "Cursor must stay at beginning of removed cluster");
+                console.log("PASS native renderer Backspace:",emoji);
+              }
+              await app.evaluate("(()=>{const ed=ace.edit('editor');ed.setValue('A🕯️B',-1);ed.clearSelection();ed.moveCursorTo(0,1);ed.focus();return true})()");
+              await app.renderer.send("Input.dispatchKeyEvent", {type:"rawKeyDown",windowsVirtualKeyCode:39,nativeVirtualKeyCode:39,key:"ArrowRight",code:"ArrowRight"});
+              await app.renderer.send("Input.dispatchKeyEvent", {type:"keyUp",windowsVirtualKeyCode:39,nativeVirtualKeyCode:39,key:"ArrowRight",code:"ArrowRight"});
+              await app.until("ace.edit('editor').getCursorPosition().column === 4");
+              console.log("PASS native keyboard ArrowRight skips whole emoji");
+            } finally {if(app) await app.close();}
+          })().then(() => process.exit(0), e => {console.error(e.stack||e);process.exit(1)});
+          NODE
+      - name: Run native Electron GUI smoke on older Ace with grapheme patch
+        run: xvfb-run -a node "$RUNNER_TEMP/emoji-editor-electron.cjs"
+
+
+      - name: Run native Electron Unicode v3 regression with mouse input
+        run: xvfb-run -a node .github/scripts/native-unicode-v3.cjs
+
+      - name: Retrieve and verify source-map-enabled r117 compiler
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r117" experiment
+          curl --fail --location --retry 3 --silent --show-error \
+            https://github.com/glassflare/inky/releases/download/v0.15.2-117/Inky-Extended-0.15.2-117-amd64.deb \
+            -o "$RUNNER_TEMP/r117/inky.deb"
+          echo "27b45b3064600b31071ffdb6e960b7b47df6091e7aa76fe16cab3e118999b7fe  $RUNNER_TEMP/r117/inky.deb" | sha256sum -c -
+          dpkg-deb -x "$RUNNER_TEMP/r117/inky.deb" "$RUNNER_TEMP/r117/unpacked"
+          compiler="$RUNNER_TEMP/r117/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux"
+          test -x "$compiler"
+          # Keep the original LFS compiler intact for reference-side comparison.
+          sha256sum "$compiler"
+          sha256sum app/main-process/ink/inklecate_linux
+
+      - name: Run native compiler source-map regressions
+        run: |
+          set -euo pipefail
+          INKY_SOURCE_MAP_COMPILER="$RUNNER_TEMP/r117/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux" \
+            node --test compiler/test/source-map-regression.test.cjs
+          # Only after source-map parity is verified, embed the r117 compiler.
+          install -m 755 "$RUNNER_TEMP/r117/unpacked/opt/inky/resources/app/main-process/ink/inklecate_linux" app/main-process/ink/inklecate_linux
+
+      - name: Package standalone Inky Extended test AppImage
+        run: |
+          set -euo pipefail
+          ./app/node_modules/.bin/electron-packager app Inky \
+            --platform=linux --arch=x64 --out=dist --prune --ignore='inklecate_mac'
+          cmp app/main-process/ink/inklecate_linux \
+            dist/Inky-linux-x64/resources/app/main-process/ink/inklecate_linux
+          mkdir -p AppDir/opt/inky AppDir/usr/share/pixmaps
+          install -m 755 resources/AppRun AppDir/AppRun
+          cp resources/com.inkle.inky.desktop AppDir/
+          cp app/renderer/about/icon-round.png AppDir/inky.png
+          cp app/renderer/about/icon-round.png AppDir/usr/share/pixmaps/inky.png
+          cp -a dist/Inky-linux-x64/. AppDir/opt/inky/
+          ARCH=x86_64 ./build/appimagetool-x86_64.AppImage --appimage-extract-and-run \
+            -n AppDir experiment/Inky-Extended-PR16-Emoji-Grapheme-v3-x86_64.AppImage
+          chmod +x experiment/Inky-Extended-PR16-Emoji-Grapheme-v3-x86_64.AppImage
+          test "$(wc -c < experiment/Inky-Extended-PR16-Emoji-Grapheme-v3-x86_64.AppImage)" -gt 10000000
+          (cd experiment && sha256sum Inky-Extended-PR16-Emoji-Grapheme-v3-x86_64.AppImage > SHA256SUMS.txt)
+          {
+            echo "Experimental Unicode grapheme AppImage — not a stable release"
+            echo "Build head: $(git rev-parse HEAD)"
+            echo "Feature branch: fix/emoji-grapheme-editing-v3"
+            echo "Base: master after PR #15"
+            echo "Compiler: verified source-map-enabled r117 Debian compiler"
+            sha256sum app/main-process/ink/inklecate_linux
+            echo "No release or merge performed"
+          } > experiment/BUILD-INFO.txt
+      - name: Upload test artifact only
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inky-PR16-Emoji-Grapheme-v3-Experimental-AppImage
+          path: experiment/
+          retention-days: 7
+          if-no-files-found: error
