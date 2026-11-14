@@ -1,0 +1,88 @@
+name: Experimental AppImage - PR 14 active line
+
+on:
+  push:
+    branches:
+      - ci/active-line-appimage-smoke
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-and-package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout experimental theme code with compiler binaries
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Verify branch and actual Git LFS compiler binaries
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          git lfs ls-files
+          test "$(wc -c < app/main-process/ink/inklecate_linux)" -gt 1024
+          test "$(wc -c < app/main-process/ink/inkjs-compatible/inklecate_linux)" -gt 1024
+          test -x app/main-process/ink/inklecate_linux
+          test -x app/main-process/ink/inkjs-compatible/inklecate_linux
+
+      - name: Install locked dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Test application (Node and Mocha)
+        working-directory: app
+        run: xvfb-run -a npm test
+
+      - name: Test web export
+        working-directory: app
+        run: npm run test:web-export
+
+      - name: Build Electron Linux x64 application
+        run: |
+          set -euo pipefail
+          ./app/node_modules/.bin/electron-packager app Inky \
+            --platform=linux --arch=x64 --out=dist --prune \
+            --ignore='inklecate_mac' --overwrite
+          test -x dist/Inky-linux-x64/Inky
+          test -x dist/Inky-linux-x64/resources/app/main-process/ink/inklecate_linux
+          for theme in light dark contrast focus; do
+            cmp "app/renderer/$theme.css" "dist/Inky-linux-x64/resources/app/renderer/$theme.css"
+          done
+
+      - name: Package experimental AppImage without publishing a release
+        run: |
+          set -euo pipefail
+          mkdir -p AppDir/opt/inky AppDir/usr/share/pixmaps experiment
+          install -m 755 resources/AppRun AppDir/AppRun
+          cp resources/com.inkle.inky.desktop AppDir/
+          cp app/renderer/about/icon-round.png AppDir/inky.png
+          cp app/renderer/about/icon-round.png AppDir/usr/share/pixmaps/inky.png
+          cp -a dist/Inky-linux-x64/. AppDir/opt/inky/
+          ARCH=x86_64 ./build/appimagetool-x86_64.AppImage --appimage-extract-and-run \
+            -n AppDir experiment/Inky-Extended-PR14-Theme-Test-x86_64.AppImage
+          chmod +x experiment/Inky-Extended-PR14-Theme-Test-x86_64.AppImage
+          test "$(wc -c < experiment/Inky-Extended-PR14-Theme-Test-x86_64.AppImage)" -gt 10000000
+          (
+            cd experiment
+            sha256sum Inky-Extended-PR14-Theme-Test-x86_64.AppImage > SHA256SUMS.txt
+          )
+          printf 'Experimental PR #14 build only. Do not distribute as a stable release.\nSource commit: %s\n' "$(git rev-parse HEAD)" > experiment/BUILD-INFO.txt
+
+      - name: Upload test artifacts (not a GitHub release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Inky-PR14-Experimental-AppImage-Linux-x86_64
+          path: experiment/
+          if-no-files-found: error
+          retention-days: 7
