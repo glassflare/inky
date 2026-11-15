@@ -1,0 +1,36 @@
+name: Verify English-only cleanup
+
+on:
+  push:
+    branches:
+      - chore/english-only-repository-text
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Ensure tracked native compilers are executable
+        run: |
+          chmod +x app/main-process/ink/inklecate_linux
+          chmod +x app/main-process/ink/inkjs-compatible/inklecate_linux
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+      - name: Run Node and Mocha tests
+        working-directory: app
+        run: xvfb-run -a npm test
+      - name: Run Web Export tests
+        working-directory: app
+        run: npm run test:web-export
