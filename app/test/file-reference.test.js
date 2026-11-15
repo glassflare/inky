@@ -43,7 +43,7 @@ describe("file references (#image:, #music:, #sound:)", function () {
     });
 
     describe("changes that are held back", function () {
-        const lines = ["Texto", "#music: dark.mp3 #align: left"];
+        const lines = ["Story", "#music: dark.mp3 #align: left"];
 
         it("never lets anything be typed, pasted or deleted inside a reference", function () {
             assert.strictEqual(allows(lines, insert(1, 12, "x")), false);
@@ -88,12 +88,12 @@ describe("file references (#image:, #music:, #sound:)", function () {
         });
 
         it("leaves every other change alone", function () {
-            assert.strictEqual(allows(["Plain text", "# title: Capa"], insert(0, 3, "x")), true);
+            assert.strictEqual(allows(["Plain text", "# title: Book"], insert(0, 3, "x")), true);
             assert.strictEqual(allows(["#title: Cover"], insert(0, 8, "x")), true);
             assert.strictEqual(allows(["#music: dark.mp3", "Linha"], insert(1, 2, "x")), true);
             assert.strictEqual(allows(["// #music: dark.mp3"], insert(0, 14, "x")), true);
             assert.strictEqual(allows(["#music: dark.mp3"], insert(0, 0, "x")), true, "before the tag itself");
-            assert.strictEqual(allows(["Texto"], insert(0, 5, "#music: ")), true);
+            assert.strictEqual(allows(["Story"], insert(0, 5, "#music: ")), true);
         });
     });
 
@@ -158,41 +158,41 @@ describe("file references (#image:, #music:, #sound:)", function () {
         };
 
         it("opens filtered file values while an incomplete reference is edited", async function () {
-            await start("Texto\n");
+            await start("Story\n");
             await type("#music: ");
             assert.ok(listOpen());
             assert.ok(listValues().includes("dark.mp3"));
             await type("d");
-            assert.strictEqual(editor.getValue(), "Texto\n#music: d");
+            assert.strictEqual(editor.getValue(), "Story\n#music: d");
             assert.ok(listOpen(), "the list filters while the value is being typed");
             await pick("dark.mp3");
-            assert.strictEqual(editor.getValue(), "Texto\n#music: dark.mp3");
+            assert.strictEqual(editor.getValue(), "Story\n#music: dark.mp3");
             assert.ok(!listOpen());
         });
 
         it("keeps a completed file reference atomic", async function () {
-            await start("Texto\n#music: dark.mp3");
+            await start("Story\n#music: dark.mp3");
             editor.moveCursorTo(1, 12);
             await type("Z");
-            assert.strictEqual(editor.getValue(), "Texto\n#music: dark.mp3");
+            assert.strictEqual(editor.getValue(), "Story\n#music: dark.mp3");
             await press(BACKSPACE);
-            assert.strictEqual(editor.getValue(), "Texto\n#music: ");
+            assert.strictEqual(editor.getValue(), "Story\n#music: ");
             assert.ok(listOpen());
-            await start("Texto\n#music: dark.mp3");
+            await start("Story\n#music: dark.mp3");
             editor.moveCursorTo(1, 12);
             await press(DELETE);
-            assert.strictEqual(editor.getValue(), "Texto\n#music: ");
+            assert.strictEqual(editor.getValue(), "Story\n#music: ");
             assert.ok(!listOpen(), "no list pops up for a change that did not happen");
         });
 
         it("Backspace removes the whole reference and shows the list again", async function () {
-            await start("Texto\n#music: dark.mp3");
+            await start("Story\n#music: dark.mp3");
             await press(BACKSPACE);
-            assert.strictEqual(editor.getValue(), "Texto\n#music: ");
+            assert.strictEqual(editor.getValue(), "Story\n#music: ");
             assert.ok(listOpen());
             assert.deepStrictEqual(listValues(), ["stop", "dark.mp3", "knock.wav", "tune.mp3", "winter wind.mp3"]);
             await pick("tune.mp3");
-            assert.strictEqual(editor.getValue(), "Texto\n#music: tune.mp3");
+            assert.strictEqual(editor.getValue(), "Story\n#music: tune.mp3");
         });
 
         it("works with another tag after the reference, and with #image:", async function () {
@@ -318,9 +318,9 @@ describe("file references (#image:, #music:, #sound:)", function () {
         });
 
         it("removes complete and partial tags with Ctrl+Backspace and preserves surrounding text", async function () {
-            await start("Texto #align: justify");
+            await start("Story #align: justify");
             await press(BACKSPACE, 1);
-            assert.strictEqual(editor.getValue(), "Texto");
+            assert.strictEqual(editor.getValue(), "Story");
             assert.strictEqual(editor.getCursorPosition().row, 0);
             assert.strictEqual(editor.getCursorPosition().column, 5);
             assert.ok(!listOpen());
