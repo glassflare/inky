@@ -45,6 +45,6 @@ describe("English interface defaults", function () {
             assert.ok(controller.includes(label), label);
         });
         assert.match(index, />Advanced<\/button>/);
-        assert.doesNotMatch(index, />Avançado<\/button>/);
+        assert.doesNotMatch(index, />Avan\u00e7ado<\/button>/);
     });
 });
