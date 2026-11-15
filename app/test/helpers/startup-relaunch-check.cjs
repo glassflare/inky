@@ -6,7 +6,7 @@ const [binaryArg,outputArg]=process.argv.slice(2);
 if(!binaryArg||!outputArg)throw Error('Usage: startup-relaunch-check.cjs BINARY NEW_OUTPUT_DIRECTORY');
 const binary=path.resolve(binaryArg),output=path.resolve(outputArg),sessionDir=path.join(output,'session'),profile=path.join(sessionDir,'profile');
 fs.mkdirSync(output,{recursive:true});
-const projectA=path.join(output,'projects','A com espaços','main.ink'),projectB=path.join(output,'projects','B','main.ink');
+const projectA=path.join(output,'projects','A with spaces','main.ink'),projectB=path.join(output,'projects','B','main.ink');
 fs.mkdirSync(path.dirname(projectA),{recursive:true});fs.mkdirSync(path.dirname(projectB),{recursive:true});
 const alpha='-> start\n=== start ===\n#title: Alpha\nSaved alpha project.\n-> DONE\n';
 const beta='-> start\n=== start ===\n#title: Beta\nSaved beta project.\n-> DONE\n';
