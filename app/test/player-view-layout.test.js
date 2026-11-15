@@ -68,11 +68,11 @@ describe("preview page layout", function () {
 
             const marker = "__inky_paragraph_gap__: 1";
             const firstScene = [
-                "Primeira linha.",
-                "Segunda linha.",
-                "Terceira linha.",
-                "Quarta linha.",
-                "Quinta linha."
+                "First line.",
+                "Second line.",
+                "Third line.",
+                "Fourth line.",
+                "Fifth line."
             ];
             const addMapped = (text, start) => playerView.addTextSection(text, {
                 version: 1, unit: "utf16", offsets: Array.from({ length: text.length }, (_, i) => start + i)
@@ -92,20 +92,20 @@ describe("preview page layout", function () {
                 .map(paragraph => window.jQuery(paragraph).data("sourceOffsets")[0]);
             assert.deepStrictEqual(firstSceneStarts, [28, 44, 84, 100, 139]);
 
-            const choiceLabel = "Casos de espaçamento";
+            const choiceLabel = "Spacing examples";
             playerView.addChoice({ choice: { text: choiceLabel, tags: [] } }, () => {});
             document.querySelector(".choice-button").click();
                 require("../renderer/playerView.js").PlayerView.contentReady();
 
             const nextScene = [
-                "Linhas consecutivas, sem margem adicional.",
-                "Esta linha deve ficar logo abaixo da anterior."
+                "Consecutive lines without extra margin.",
+                "This line should appear directly below the previous one."
             ];
             addMapped(nextScene[0], 200);
-            playerView.addTags(["title: Espaçamento", "screen"]);
+            playerView.addTags(["title: Spacing", "screen"]);
             addMapped(nextScene[1], 250);
             playerView.addTags([]);
-            addMapped("Uma linha vazia", 313);
+            addMapped("One blank line", 313);
             playerView.addTags([marker]);
 
             playerView.contentReady();
