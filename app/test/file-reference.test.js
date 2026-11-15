@@ -232,7 +232,7 @@ describe("file references (#image:, #music:, #sound:)", function () {
             editor.selection.selectTo(1, 14);
             await type("x");
             await press(BACKSPACE);
-            assert.strictEqual(editor.getValue(), "A\n#image: capg\nEnd");
+            assert.strictEqual(editor.getValue(), "A\n#image: arpg\nEnd");
         });
 
         it("deletes closed values and tags atomically through E0, E1, E2 and E3", async function () {
