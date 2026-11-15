@@ -34,7 +34,7 @@ ipcMain.handle('pearl-test-theme',(_event,theme)=>{
 `);
 
 const original=path.join(project,'pearl-notes.ink'),renamed=path.join(project,'pearl-notes-renamed.ink');
-const source='// Caderno de teste do Pearl.\nVAR visitas = 0\nLIST tempo = chuva, neve\n-> sala\n=== sala ===\n#title: Caderno\n#screen\nA chuva cai lá fora.\n* [Abrir o caderno]\n    ~ visitas = visitas + 1\n    -> END\n';
+const source='// Pearl test notebook.\nVAR visits = 0\nLIST weather = rain, snow\n-> room\n=== room ===\n#title: Notebook\n#screen\nThe rain falls outside.\n* [Open the notebook]\n    ~ visits = visits + 1\n    -> END\n';
 assert(!fs.existsSync(original)&&!fs.existsSync(renamed),'Temporary fixture names already exist in the copied project');
 fs.writeFileSync(original,source);let app;
 (async()=>{try{
@@ -156,10 +156,10 @@ fs.writeFileSync(original,source);let app;
  await app.evaluate("ace.edit('editor').execCommand('replace')");
  await app.until("getComputedStyle(document.querySelector('.ace_replace_form')).display!=='none'");
  await app.evaluate("(()=>{const i=ace.edit('editor').searchBox.searchInput;i.focus();i.select()})()");
- await app.renderer.send('Input.insertText',{text:'A chuva cai lá fora.'});
- await app.until("ace.edit('editor').getSelectedText()==='A chuva cai lá fora.'");
+ await app.renderer.send('Input.insertText',{text:'The rain falls outside.'});
+ await app.until("ace.edit('editor').getSelectedText()==='The rain falls outside.'");
  await app.evaluate("(()=>{const i=ace.edit('editor').searchBox.replaceInput;i.focus();i.select()})()");
- await app.renderer.send('Input.insertText',{text:'A neve cai lá fora.'});
+ await app.renderer.send('Input.insertText',{text:'The snow falls outside.'});
  await audit('native-replace',[
   {name:'Replace input',selector:'.ace_replace_form .ace_search_field'},
   {name:'Replace actions',selector:'.ace_replacebtn'},
@@ -167,7 +167,7 @@ fs.writeFileSync(original,source);let app;
  ]);
  shots.push(await shot('05-replace'));
  await app.evaluate("document.querySelector('.ace_replacebtn[action=replaceAndFindNext]').click()");
- await app.until("ace.edit('editor').getValue().includes('A neve cai lá fora.')");
+ await app.until("ace.edit('editor').getValue().includes('The snow falls outside.')");
  await app.evaluate("ace.edit('editor').undo()");
  assert.equal(await app.evaluate("ace.edit('editor').getValue()"),source);
  await app.evaluate("ace.edit('editor').searchBox.hide()");
@@ -222,7 +222,7 @@ fs.writeFileSync(original,source);let app;
   {name:'Active tab indicator',selector:'.style-mode-tab.active',pseudo:'::before',property:'backgroundColor',minimum:3}
  ]);
  shots.push(await shot('10-advanced'));
- await app.evaluate("(()=>{window.__dialogResult=null;require('./navView.js').NavView.showDialog({title:'Diálogo do Explorer',message:'Conferir texto, ações e foco no Pearl.',details:['Item temporário de teste'],note:'Nenhum arquivo será excluído.',buttons:[{label:'Cancelar',value:false},{label:'Confirmar',value:true,primary:true},{label:'Excluir',value:'delete',danger:true}]}).then(value=>window.__dialogResult=value);return true})()");
+ await app.evaluate("(()=>{window.__dialogResult=null;require('./navView.js').NavView.showDialog({title:'Explorer dialog',message:'Check text, actions, and focus in Pearl.',details:['Temporary test item'],note:'No files will be deleted.',buttons:[{label:'Cancel',value:false},{label:'Confirm',value:true,primary:true},{label:'Delete',value:'delete',danger:true}]}).then(value=>window.__dialogResult=value);return true})()");
  await app.until("!!document.querySelector('.explorer-dialog')");
  await audit('explorer-dialog',[
   {name:'Dialog title',selector:'.explorer-dialog-title'},
